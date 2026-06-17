@@ -1,5 +1,5 @@
 # Playwright's official Python image ships Chromium + all system deps preinstalled.
-FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.60.0-jammy
 
 WORKDIR /app
 
