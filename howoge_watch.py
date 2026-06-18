@@ -62,7 +62,7 @@ import requests
 TG_TOKEN = os.environ.get("HOWOGE_TG_TOKEN", "")   # from @BotFather
 TG_CHAT = os.environ.get("HOWOGE_TG_CHAT", "")     # your numeric chat id
 
-MAX_WARM_RENT = 675          # EUR, total warm rent ceiling
+MAX_WARM_RENT = 1400         # EUR, total warm rent ceiling
 POLL_INTERVAL_SECONDS = 240  # 4 min. Do NOT go below ~120s (be polite, avoid IP block)
 
 # Relevant postal codes. Prenzlauer Berg, Pankow (Ortsteil), Kreuzberg,
