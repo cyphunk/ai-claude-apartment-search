@@ -51,6 +51,7 @@ import time
 import html
 import logging
 from dataclasses import dataclass, asdict
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -149,6 +150,16 @@ def tg_send(text: str) -> None:
             log.error("Telegram error %s: %s", r.status_code, r.text[:200])
     except Exception as e:
         log.error("Telegram send failed: %s", e)
+
+
+def send_status_ping(seen: set, daily_new: int, daily_matches: int, label: str) -> None:
+    msg = (
+        f"\U0001F916 {label}\n"
+        f"• Seen total: {len(seen):,} listings\n"
+        f"• New since last status: {daily_new} listings\n"
+        f"• Matches since last status: {daily_matches}"
+    )
+    tg_send(msg)
 
 
 def format_alert(li: Listing) -> str:
@@ -322,8 +333,9 @@ SOURCES = [fetch_howoge]
 # MAIN LOOP
 # ----------------------------------------------------------------------
 
-def run_once(seen: set, debug: bool = False) -> int:
-    new_count = 0
+def run_once(seen: set, debug: bool = False) -> tuple:
+    new_listings = 0
+    new_matches = 0
     for src in SOURCES:
         try:
             listings = src(debug=debug)
@@ -334,14 +346,15 @@ def run_once(seen: set, debug: bool = False) -> int:
             if li.uid in seen:
                 continue
             seen.add(li.uid)           # mark seen even if filtered, so no re-eval spam
+            new_listings += 1
             if passes_filter(li):
                 log.info("MATCH %s | %s EUR | %s", li.uid, li.warm_rent, li.url)
                 tg_send(format_alert(li))
-                new_count += 1
+                new_matches += 1
             else:
                 log.info("skip  %s (plz=%s rent=%s)", li.uid, li.plz, li.warm_rent)
     save_seen(seen)
-    return new_count
+    return new_listings, new_matches
 
 
 def main():
@@ -349,20 +362,30 @@ def main():
     seen = load_seen()
     log.info("Watcher start. %d known listings. ceiling=%s EUR. %d PLZ.",
              len(seen), MAX_WARM_RENT, len(ALLOWED_PLZ))
-    tg_send("\u2705 HOWOGE watcher running. You will be pinged on new matches.")
+    send_status_ping(seen, 0, 0, "Started")
 
     if debug:
         run_once(seen, debug=True)
         return
 
+    daily_new = 0
+    daily_matches = 0
+    last_ping_date = None
+
     while True:
         try:
-            run_once(seen)
+            nl, nm = run_once(seen)
+            daily_new += nl
+            daily_matches += nm
         except KeyboardInterrupt:
             log.info("Stopped by user.")
             break
         except Exception as e:
             log.error("Loop error: %s", e)
+        today = datetime.now().date()
+        if datetime.now().hour >= 12 and last_ping_date != today:
+            send_status_ping(seen, daily_new, daily_matches, "Daily status")
+            daily_new, daily_matches, last_ping_date = 0, 0, today
         time.sleep(POLL_INTERVAL_SECONDS)
 
 
