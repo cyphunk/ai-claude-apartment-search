@@ -153,12 +153,8 @@ def tg_send(text: str) -> None:
 
 
 def send_status_ping(seen: set, daily_new: int, daily_matches: int, label: str) -> None:
-    msg = (
-        f"\U0001F916 {label}\n"
-        f"• Seen total: {len(seen):,} listings\n"
-        f"• New since last status: {daily_new} listings\n"
-        f"• Matches since last status: {daily_matches}"
-    )
+    date_str = datetime.now().strftime("%y%m%d")
+    msg = f"\U0001F916 {date_str}: {len(seen)} seen, {daily_new} new, {daily_matches} matched"
     tg_send(msg)
 
 
