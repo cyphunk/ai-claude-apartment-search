@@ -84,6 +84,10 @@ POLL_JITTER_SECONDS = int(os.environ.get("POLL_JITTER_SECONDS", "60"))
 # explicitly so a stuck launch raises instead of blocking indefinitely).
 BROWSER_LAUNCH_TIMEOUT_MS = int(os.environ.get("BROWSER_LAUNCH_TIMEOUT_MS", "60000"))
 
+# When a block/throttle is detected, send at most one Telegram warning per this
+# many seconds (default 1h) so we don't spam a message every poll while blocked.
+BLOCK_NOTIFY_INTERVAL_SECONDS = int(os.environ.get("BLOCK_NOTIFY_INTERVAL_SECONDS", "3600"))
+
 # After MAX_DETAIL_RETRIES failed enrichments, decide what to do with a listing
 # whose postal code could still not be determined:
 #   True  -> send a flagged alert so nothing is silently missed
@@ -107,6 +111,9 @@ ALLOWED_PLZ = {
 
 # On Railway: set SEEN_PATH=/data/seen_listings.json and mount a volume at /data
 SEEN_FILE = Path(os.environ.get("SEEN_PATH", "seen_listings.json"))
+# Tracks the last time we sent a block/throttle alert (file-based so it survives
+# across the per-cycle scrape subprocesses, which don't share memory).
+BLOCK_NOTIFY_FILE = SEEN_FILE.parent / ".block_notified"
 HEADLESS   = True
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
               "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -179,7 +186,9 @@ def tg_send(text: str) -> None:
 
 def send_status_ping(seen: set, daily_new: int, daily_matches: int, label: str) -> None:
     date_str = datetime.now().strftime("%y%m%d")
-    msg = f"\U0001F916 {date_str}: {len(seen)} seen, {daily_new} new, {daily_matches} matched"
+    poll_m = max(1, POLL_INTERVAL_SECONDS // 60)
+    msg = (f"\U0001F916 {date_str}: {len(seen)} seen, {daily_new} new, "
+           f"{daily_matches} matched, poll {poll_m}m")
     tg_send(msg)
 
 
@@ -275,9 +284,30 @@ BLOCK_SIGNALS = (
 )
 
 
+def _maybe_notify_block(status, hits) -> None:
+    """Send a Telegram block/throttle warning, but at most once per
+    BLOCK_NOTIFY_INTERVAL_SECONDS so we don't spam while blocked. State is kept in
+    a file because each scrape cycle runs in a fresh subprocess (no shared memory)."""
+    now = time.time()
+    try:
+        last = float(BLOCK_NOTIFY_FILE.read_text().strip()) if BLOCK_NOTIFY_FILE.exists() else 0.0
+    except Exception:
+        last = 0.0
+    if now - last < BLOCK_NOTIFY_INTERVAL_SECONDS:
+        return
+    try:
+        BLOCK_NOTIFY_FILE.write_text(str(now))
+    except Exception:
+        pass
+    tg_send(f"⚠️ HOWOGE watcher: target appears to be blocking/throttling us "
+            f"(http={status}, signals={', '.join(hits) if hits else 'none'}). "
+            f"Still running; will keep retrying.")
+
+
 def diagnose_block(page, response) -> None:
     """On a render failure, log HTTP status + any block-page signals so we can tell
-    a throttle/block apart from a genuinely empty page. Best-effort; never raises."""
+    a throttle/block apart from a genuinely empty page, and send a (rate-limited)
+    Telegram alert when a block is detected. Best-effort; never raises."""
     status = None
     try:
         status = response.status if response else None
@@ -292,6 +322,7 @@ def diagnose_block(page, response) -> None:
     if status in (403, 429) or hits:
         log.warning("HOWOGE: likely BLOCKED/THROTTLED (http=%s signals=%s)",
                     status, hits or "none")
+        _maybe_notify_block(status, hits)
     else:
         log.warning("HOWOGE: no cards and no block signals (http=%s, len=%d) — "
                     "possibly transient or markup change", status, len(body))
