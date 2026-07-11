@@ -1,5 +1,10 @@
 # Playwright's official Python image ships Chromium + all system deps preinstalled.
-FROM mcr.microsoft.com/playwright/python:v1.60.0-jammy
+# CRITICAL: this image tag bakes in ONE Chromium build, matching exactly this
+# Playwright version. The pip pin in requirements.txt MUST stay in lockstep with
+# it (same X.Y.Z). If they drift, pip installs a Playwright that looks for a
+# Chromium build the image doesn't contain, and every launch fails with
+# "Executable doesn't exist" — a silent, total scraper outage. Bump both together.
+FROM mcr.microsoft.com/playwright/python:v1.61.0-jammy
 
 WORKDIR /app
 

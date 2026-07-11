@@ -88,6 +88,19 @@ BROWSER_LAUNCH_TIMEOUT_MS = int(os.environ.get("BROWSER_LAUNCH_TIMEOUT_MS", "600
 # many seconds (default 1h) so we don't spam a message every poll while blocked.
 BLOCK_NOTIFY_INTERVAL_SECONDS = int(os.environ.get("BLOCK_NOTIFY_INTERVAL_SECONDS", "3600"))
 
+# A "failed cycle" is one where the scrape subprocess errored/timed out or every
+# source raised — i.e. we got NO usable data, as opposed to a clean run that
+# genuinely found nothing new. These are the failures that silently freeze the
+# "seen" counter (e.g. Chromium crashing on launch), so we surface and self-heal:
+#   * FAILURE_NOTIFY_INTERVAL_SECONDS: min seconds between failure alerts (rate limit)
+#   * MAX_CONSECUTIVE_FAILURES: after this many failed cycles in a row, exit non-zero
+#     so the platform (Railway restartPolicy=ALWAYS) recycles us into a FRESH
+#     container. The watcher's own catch-and-continue loop otherwise keeps the
+#     process alive forever, so the container never restarts and never escapes a
+#     wedged environment. 0 disables the self-restart.
+FAILURE_NOTIFY_INTERVAL_SECONDS = int(os.environ.get("FAILURE_NOTIFY_INTERVAL_SECONDS", "3600"))
+MAX_CONSECUTIVE_FAILURES        = int(os.environ.get("MAX_CONSECUTIVE_FAILURES", "5"))
+
 # After MAX_DETAIL_RETRIES failed enrichments, decide what to do with a listing
 # whose postal code could still not be determined:
 #   True  -> send a flagged alert so nothing is silently missed
@@ -114,6 +127,8 @@ SEEN_FILE = Path(os.environ.get("SEEN_PATH", "seen_listings.json"))
 # Tracks the last time we sent a block/throttle alert (file-based so it survives
 # across the per-cycle scrape subprocesses, which don't share memory).
 BLOCK_NOTIFY_FILE = SEEN_FILE.parent / ".block_notified"
+# Same idea for scrape-failure alerts (browser crash, timeout, all sources down).
+FAILURE_NOTIFY_FILE = SEEN_FILE.parent / ".failure_notified"
 HEADLESS   = True
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
               "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -302,6 +317,27 @@ def _maybe_notify_block(status, hits) -> None:
     tg_send(f"⚠️ HOWOGE watcher: target appears to be blocking/throttling us "
             f"(http={status}, signals={', '.join(hits) if hits else 'none'}). "
             f"Still running; will keep retrying.")
+
+
+def _maybe_notify_failure(consecutive: int, detail: str) -> None:
+    """Alert that scrape cycles are failing outright (browser crash, timeout, or
+    every source down) — the silent failure mode that freezes the 'seen' counter
+    without ever tripping the block detector. Rate-limited via a file timestamp so
+    the limit also holds across a self-restart and we don't spam while wedged."""
+    now = time.time()
+    try:
+        last = float(FAILURE_NOTIFY_FILE.read_text().strip()) if FAILURE_NOTIFY_FILE.exists() else 0.0
+    except Exception:
+        last = 0.0
+    if now - last < FAILURE_NOTIFY_INTERVAL_SECONDS:
+        return
+    try:
+        FAILURE_NOTIFY_FILE.write_text(str(now))
+    except Exception:
+        pass
+    tg_send(f"⛔ HOWOGE watcher: scrape is FAILING — no listings fetched for "
+            f"{consecutive} cycle(s) in a row. Last error: {detail}. "
+            f"A frozen 'seen' count right now means the scraper is down, not a quiet market.")
 
 
 def diagnose_block(page, response) -> None:
@@ -514,39 +550,56 @@ _RETRY: dict = {}  # uid -> number of inconclusive PLZ-unknown attempts
 
 
 def _scrape_worker(q, seen_snapshot, debug):
-    """Run all sources and put (status, payload) on the queue. Runs in a CHILD
-    process so that a hung Playwright/Chromium call cannot wedge the watcher —
-    the parent kills this process if it overruns CYCLE_TIMEOUT_SECONDS, and the
-    child's exit reclaims all browser memory regardless of leaks."""
+    """Run all sources and put (status, payload, n_ok, detail) on the queue. Runs
+    in a CHILD process so that a hung Playwright/Chromium call cannot wedge the
+    watcher — the parent kills this process if it overruns CYCLE_TIMEOUT_SECONDS,
+    and the child's exit reclaims all browser memory regardless of leaks.
+
+    n_ok = how many sources returned without raising (an empty list still counts
+    as a healthy run). detail = last source error, so the parent can tell a real
+    outage (every source raised) apart from a clean-but-empty poll."""
     try:
         out = []
+        n_ok = 0
+        detail = ""
         for src in SOURCES:
             try:
                 out.extend(src(seen_snapshot, debug=debug))
+                n_ok += 1
             except Exception as e:
+                detail = f"{getattr(src, '__name__', src)}: {e}"
                 log.error("Source %s failed: %s", getattr(src, "__name__", src), e)
-        q.put(("ok", out))
+        q.put(("ok", out, n_ok, detail))
     except Exception as e:
-        q.put(("err", repr(e)))
+        q.put(("err", [], 0, repr(e)))
 
 
-def scrape_all(seen: set, debug: bool = False) -> list:
-    """Run the scrape in a child process with a hard wall-clock timeout. Returns
-    the listings, or [] if the cycle errored or had to be killed for overrunning."""
+def scrape_all(seen: set, debug: bool = False) -> tuple:
+    """Run the scrape in a child process with a hard wall-clock timeout.
+
+    Returns (listings, ok, detail):
+      * ok=True  -> the cycle ran and at least one source returned data (possibly
+                    an empty but legitimate result).
+      * ok=False -> a real failure: the worker errored, was killed for overrunning,
+                    or every source raised. `detail` explains it. This is the case
+                    that must NOT be mistaken for a genuinely quiet market."""
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
     p = ctx.Process(target=_scrape_worker, args=(q, set(seen), debug), daemon=True)
     p.start()
+    n_ok, detail = 0, ""
     try:
         # Read the result first (not join-then-get) to avoid a queue/pipe deadlock.
-        status, payload = q.get(timeout=CYCLE_TIMEOUT_SECONDS)
+        status, payload, n_ok, detail = q.get(timeout=CYCLE_TIMEOUT_SECONDS)
     except queue.Empty:
         log.error("scrape cycle exceeded %ds — killing hung worker (pid=%s)",
                   CYCLE_TIMEOUT_SECONDS, p.pid)
         status, payload = "timeout", []
+        detail = f"cycle exceeded {CYCLE_TIMEOUT_SECONDS}s (hung, killed)"
     except Exception as e:
         log.error("scrape worker error: %s", e)
         status, payload = "err", []
+        detail = repr(e)
     finally:
         # Reap a cleanly-finished worker quickly; force-kill a hung one.
         p.join(timeout=2)
@@ -558,14 +611,17 @@ def scrape_all(seen: set, debug: bool = False) -> list:
             p.join()
 
     if status != "ok":
-        return []
-    return payload
+        return [], False, detail or status
+    if n_ok == 0:
+        # Worker finished but every source raised — no usable data this cycle.
+        return [], False, detail or "all sources failed"
+    return payload, True, ""
 
 
 def run_once(seen: set, debug: bool = False) -> tuple:
     new_listings = 0
     new_matches = 0
-    listings = scrape_all(seen, debug=debug)
+    listings, cycle_ok, detail = scrape_all(seen, debug=debug)
     for li in listings:
         if li.uid in seen:
             continue
@@ -604,7 +660,7 @@ def run_once(seen: set, debug: bool = False) -> tuple:
             log.info("give-up %s after %d detail attempts", li.uid, n)
 
     save_seen(seen)
-    return new_listings, new_matches
+    return new_listings, new_matches, cycle_ok, detail
 
 
 def main():
@@ -618,9 +674,10 @@ def main():
     # Log effective runtime config so the deployed values (esp. POLL_INTERVAL_SECONDS)
     # can be confirmed from the logs — this is how we verify env-var overrides applied.
     log.info("Config: poll=%ss jitter=0-%ss cycle_timeout=%ss launch_timeout=%sms "
-             "max_detail_retries=%s alert_on_unverified=%s",
+             "max_detail_retries=%s alert_on_unverified=%s max_consecutive_failures=%s",
              POLL_INTERVAL_SECONDS, POLL_JITTER_SECONDS, CYCLE_TIMEOUT_SECONDS,
-             BROWSER_LAUNCH_TIMEOUT_MS, MAX_DETAIL_RETRIES, ALERT_ON_UNVERIFIED)
+             BROWSER_LAUNCH_TIMEOUT_MS, MAX_DETAIL_RETRIES, ALERT_ON_UNVERIFIED,
+             MAX_CONSECUTIVE_FAILURES)
     send_status_ping(seen, 0, 0, "Started")
 
     if debug:
@@ -630,10 +687,11 @@ def main():
     daily_new = 0
     daily_matches = 0
     last_ping_date = None
+    consecutive_failures = 0
 
     while True:
         try:
-            nl, nm = run_once(seen)
+            nl, nm, cycle_ok, detail = run_once(seen)
             daily_new += nl
             daily_matches += nm
         except KeyboardInterrupt:
@@ -641,6 +699,28 @@ def main():
             break
         except Exception as e:
             log.error("Loop error: %s", e)
+            cycle_ok, detail = False, repr(e)
+
+        # Track outright scrape failures (browser crash, timeout, all sources down)
+        # separately from clean-but-empty polls. This is the failure mode that
+        # silently freezes the 'seen' counter, so we alert on it and, if it
+        # persists, exit so Railway (restartPolicy=ALWAYS) gives us a FRESH
+        # container — the escape hatch this watcher previously lacked.
+        if cycle_ok:
+            consecutive_failures = 0
+        else:
+            consecutive_failures += 1
+            log.error("scrape cycle FAILED (%d in a row): %s",
+                      consecutive_failures, detail)
+            _maybe_notify_failure(consecutive_failures, detail)
+            if MAX_CONSECUTIVE_FAILURES and consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                log.error("hit %d consecutive failures — exiting for a fresh "
+                          "container (restartPolicy=ALWAYS will restart us).",
+                          consecutive_failures)
+                tg_send(f"🔁 HOWOGE watcher: {consecutive_failures} failed cycles — "
+                        f"restarting the container to recover.")
+                sys.exit(1)
+
         today = datetime.now().date()
         if datetime.now().hour >= 12 and last_ping_date != today:
             send_status_ping(seen, daily_new, daily_matches, "Daily status")

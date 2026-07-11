@@ -1,2 +1,7 @@
 requests>=2.31
-playwright>=1.48
+# PIN, do not float: the Playwright version must equal the base-image tag in the
+# Dockerfile (mcr.microsoft.com/playwright/python:vX.Y.Z-jammy). The image ships the
+# matching Chromium build; a floating "playwright>=..." lets pip install a newer
+# Playwright whose Chromium build isn't in the image, breaking every launch. Bump
+# this and the Dockerfile FROM together, never one alone.
+playwright==1.61.0
