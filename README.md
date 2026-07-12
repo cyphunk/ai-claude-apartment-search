@@ -1,8 +1,16 @@
-# howoge-watch
+# berlin-landeseigene-watch (howoge-watch)
 
-Watches HOWOGE for new Berlin flats and pushes a Telegram alert the moment a
-listing matches your price ceiling and postal-code list. Built to run 24/7 as a
-Railway background worker (also runs on any VPS, Raspberry Pi, or laptop via Docker).
+Watches Berlin's state-owned (landeseigene) housing companies for new flats and
+pushes a Telegram alert the moment a listing matches your price ceiling and
+postal-code list. Built to run 24/7 as a Railway background worker (also runs on
+any VPS, Raspberry Pi, or laptop via Docker).
+
+**Coverage:** the primary source is the [inberlinwohnen.de](https://www.inberlinwohnen.de/wohnungsfinder/)
+Wohnungsfinder, which aggregates live vacancies from **all seven** state-owned
+companies at once (berlinovo, degewo, GESOBAU, Gewobag, HOWOGE, STADT UND LAND,
+WBM). The direct HOWOGE scraper is kept as a **fallback**, run only when the
+aggregator returns nothing (so a HOWOGE flat, which appears in both, never
+double-alerts).
 
 Filter: warm rent <= `MAX_WARM_RENT` AND postal code in `ALLOWED_PLZ`.
 Both are set at the top of `howoge_watch.py`.
@@ -55,13 +63,31 @@ That is it. New matches arrive as Telegram messages with the listing link.
 
 - Change price ceiling, postal codes, or poll interval at the top of
   `howoge_watch.py`, commit, push. Railway redeploys automatically.
-- If a run reports 0 listings while the HOWOGE site clearly shows some, the page
-  markup likely changed. Run locally with `python3 howoge_watch.py --debug`,
-  which writes `debug_howoge.html`. Inspect the repeating listing element and
-  update the `CARD_SELECTORS` / fields marked `TUNE` in `fetch_howoge()`.
+- If a run reports 0 listings while a site clearly shows some, the page markup
+  likely changed. Run with `python3 howoge_watch.py --debug`, which writes
+  `debug_howoge.html`, `debug_inberlin.html`, and `debug_inberlin_api.json`.
+  Inspect the repeating listing element (or the captured JSON) and update the
+  `CARD_SELECTORS` / fields marked `TUNE` in the relevant `fetch_*` function.
 
-## Adding more landlords later
+### One-time tuning of the inberlinwohnen source
 
-Write a `fetch_<name>(debug=False)` returning `list[Listing]`, then append it to
-the `SOURCES` list. Filtering, dedup, and Telegram alerting are shared, so a new
-source is usually 20-30 lines.
+The aggregator source (`fetch_inberlinwohnen`) was written without live access to
+the site, so its card selectors / JSON field mapping are a best effort and need
+one validation pass against the real page:
+
+1. Run `python3 howoge_watch.py --debug` **on a host that can reach the site**
+   (e.g. the Railway container), and grab `debug_inberlin.html` /
+   `debug_inberlin_api.json`.
+2. Confirm the listings JSON shape (preferred) or the repeating card element, and
+   adjust `_parse_inberlin` / `CARD_SELECTORS` if needed.
+
+Until validated the source may return `[]`, which is safe: the HOWOGE **fallback**
+keeps coverage, and the failure watchdog alerts if *everything* stops returning data.
+
+## Adding more landlords/portals later
+
+Write a `fetch_<name>(seen, debug=False)` returning `list[Listing]`, then append it
+to `PRIMARY_SOURCES` (or `FALLBACK_SOURCES`). Filtering, dedup, enrichment, Telegram
+alerting, failure alerts, and self-restart are all shared, so a new source is
+usually 20-30 lines. The fallback list runs only when the primary list yields
+nothing.
