@@ -650,7 +650,8 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     from playwright.sync_api import sync_playwright
 
     listings = []
-    api_payloads = []  # (url, decoded_json) captured from XHR/fetch responses
+    api_payloads = []  # (url, decoded_json) captured from XHR/fetch JSON responses
+    net_log = []       # (resource_type, status, content_type, url) for diagnostics
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=HEADLESS, timeout=BROWSER_LAUNCH_TIMEOUT_MS)
         try:
@@ -658,11 +659,12 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
 
             def _capture(resp):
                 try:
-                    if resp.request.resource_type not in ("xhr", "fetch"):
-                        return
-                    if "application/json" not in resp.headers.get("content-type", ""):
-                        return
-                    api_payloads.append((resp.url, resp.json()))
+                    rt = resp.request.resource_type
+                    ct = resp.headers.get("content-type", "")
+                    if rt in ("xhr", "fetch", "document"):
+                        net_log.append((rt, resp.status, ct.split(";")[0], resp.url))
+                    if rt in ("xhr", "fetch") and "application/json" in ct:
+                        api_payloads.append((resp.url, resp.json()))
                 except Exception:
                     pass
 
@@ -683,7 +685,7 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
                 if not api_payloads:
                     diagnose_block(page, response)
 
-            listings = _parse_inberlin(page, browser, seen, api_payloads, debug)
+            listings = _parse_inberlin(page, browser, seen, api_payloads, debug, net_log)
         finally:
             try:
                 browser.close()
@@ -694,7 +696,8 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     return listings
 
 
-def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool) -> list:
+def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
+                    net_log: list = None) -> list:
     """Build listings from the captured API JSON if available, else from rendered
     DOM cards. Split out of fetch_inberlinwohnen so the browser teardown lives in
     a single finally block (same shape as _parse_and_enrich)."""
@@ -764,6 +767,13 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool) -
             seen_ids.add(li.uid)
             listings.append(li)
 
+    # DIAGNOSTIC: if we found nothing, snapshot what the container actually got so
+    # the parser can be tuned against the real page (the site is unreachable from
+    # the dev sandbox). Writes to the persistent /data volume (readable out-of-band)
+    # and logs the network map. Overwrites a single file, so no unbounded growth.
+    if not listings:
+        _dump_inberlin_diagnostics(page, api_payloads, net_log or [])
+
     # Enrich new listings missing PLZ or warm rent from their detail page. The
     # detail pages live on the seven companies' own sites; enrich_from_detail is
     # text-based and source-agnostic, so it works across all of them.
@@ -775,6 +785,37 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool) -
             enrich_from_detail(browser, li)
 
     return listings
+
+
+def _dump_inberlin_diagnostics(page, api_payloads: list, net_log: list) -> None:
+    """Best-effort snapshot to help tune the aggregator parser: the rendered HTML
+    and captured JSON go to the /data volume; the XHR/fetch endpoint map is logged
+    (the log is enough to spot a listings API; the HTML is there for selectors)."""
+    try:
+        xhrs = [n for n in net_log if n[0] in ("xhr", "fetch")]
+        log.info("inberlin DIAG: %d xhr/fetch, %d json payloads captured",
+                 len(xhrs), len(api_payloads))
+        for rt, status, ct, url in xhrs[:25]:
+            log.info("inberlin DIAG net: [%s %s] %s %s", rt, status, ct, url[:160])
+        for u, j in api_payloads[:3]:
+            sample = json.dumps(j, ensure_ascii=False)[:300]
+            log.info("inberlin DIAG json %s -> %s", u[:120], sample)
+    except Exception as e:
+        log.warning("inberlin DIAG logging failed: %s", e)
+    try:
+        out_dir = SEEN_FILE.parent
+        (out_dir / "inberlin_debug.html").write_text(page.content(), encoding="utf-8")
+        (out_dir / "inberlin_debug_net.json").write_text(
+            json.dumps({
+                "net": [{"type": rt, "status": st, "ct": ct, "url": u}
+                        for rt, st, ct, u in net_log],
+                "json_payloads": [{"url": u, "sample": j} for u, j in api_payloads],
+            }, ensure_ascii=False)[:3_000_000],
+            encoding="utf-8")
+        log.info("inberlin DIAG: wrote %s/inberlin_debug.html + inberlin_debug_net.json",
+                 out_dir)
+    except Exception as e:
+        log.warning("inberlin DIAG file dump failed: %s", e)
 
 
 # ----------------------------------------------------------------------
