@@ -518,7 +518,7 @@ def _parse_and_enrich(page, browser, seen: set, debug: bool) -> list:
             rooms = mr.group(1)
 
         size = ""
-        ms = re.search(r"(\d{2,3}(?:[.,]\d)?)\s*m", text_flat)
+        ms = re.search(r"(\d{2,3}(?:[.,]\d+)?)\s*m", text_flat)
         if ms:
             size = ms.group(1) + " m2"
 
@@ -581,7 +581,7 @@ def _listing_from_text(text_flat: str, url: str, source_label: str) -> "Listing"
     if mr:
         rooms = mr.group(1)
     size = ""
-    ms = re.search(r"(\d{2,3}(?:[.,]\d)?)\s*m", text_flat)
+    ms = re.search(r"(\d{2,3}(?:[.,]\d+)?)\s*m", text_flat)
     if ms:
         size = ms.group(1) + " m2"
     wbs = "ja" if re.search(r"\bWBS\b", text_flat, re.IGNORECASE) else "?"
@@ -670,17 +670,19 @@ def _dismiss_consent(page) -> None:
 
 
 def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
-    """Load the inberlinwohnen Wohnungsfinder (an Angular app behind a JSON REST
-    API, itself fed by the companies' OpenImmo feeds) in a headless browser. The
-    site's WAF blocks plain requests, so we drive a real browser like HOWOGE,
-    prefer the intercepted listings JSON, and fall back to reading rendered cards.
-    New listings missing PLZ/warm rent are enriched from their detail page.
+    """Load the inberlinwohnen Wohnungsfinder in a headless browser and read every
+    listing from the Livewire map payload it fetches on load. The finder is a
+    Livewire (Laravel) app whose POST /livewire/update response carries a
+    mapData.cluster array — one marker per vacancy, each with rooms/size/price/
+    street/PLZ/district — so a single response yields all listings (no pagination,
+    no per-card DOM). The site's WAF blocks plain requests, hence the real browser;
+    a cookie-consent banner is dismissed first so the payload loads.
 
-    NOTE ON TUNING: the card selectors and JSON field discovery below are a best
-    effort written without live access to the site. Run once with --debug to dump
-    debug_inberlin.html and debug_inberlin_api.json, then confirm/adjust the
-    CARD_SELECTORS and the JSON handling. Until validated this may return []; that
-    is safe — the HOWOGE fallback source keeps coverage and nothing double-alerts.
+    _listings_from_livewire() is the primary parser; a generic JSON-dict scan and a
+    rendered-card reader are kept as fallbacks. If nothing parses, a diagnostic
+    snapshot is written (see _dump_inberlin_diagnostics) and the source returns [] —
+    which is safe: the HOWOGE fallback source keeps coverage and nothing
+    double-alerts.
     """
     from playwright.sync_api import sync_playwright
 
@@ -717,7 +719,7 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
             # so the listings actually render, then let lazy content load.
             _dismiss_consent(page)
 
-            # The Angular app fetches listings after load; give it a moment and
+            # The Livewire app fetches listings after load; give it a moment and
             # wait for either its JSON or rendered cards to arrive.
             try:
                 page.wait_for_load_state("networkidle", timeout=20000)
@@ -747,6 +749,70 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     return listings
 
 
+def _iter_cluster_markers(obj):
+    """Yield map-marker lists from a Livewire mapData structure of unknown nesting.
+    Each marker is [lat, lon, summary, popup_html, id] — the shape the finder emits
+    via effects.dispatches[].params.mapData.cluster. We walk defensively because the
+    markers may be grouped/clustered under extra list levels."""
+    if isinstance(obj, list):
+        if (len(obj) >= 5 and isinstance(obj[-1], int)
+                and isinstance(obj[3], str)
+                and re.search(r"Zimmer|€|m²|m2", f"{obj[2]} {obj[3]}", re.IGNORECASE)):
+            yield obj
+        else:
+            for x in obj:
+                yield from _iter_cluster_markers(x)
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            yield from _iter_cluster_markers(v)
+
+
+def _strip_tags(html_text: str) -> str:
+    return " ".join(re.sub(r"<[^>]+>", " ", html_text or "").split())
+
+
+def _listings_from_livewire(api_payloads: list) -> list:
+    """Primary parser: pull every listing from the Livewire map-data payload the
+    Wohnungsfinder fetches on load. One response carries all listings as structured
+    markers, so there's no pagination or per-card DOM scraping. Each marker's popup
+    HTML has rooms, size, price, street, PLZ and district — everything the price/PLZ
+    filter needs. The finder shows a single headline rent with no explicit Warm/Kalt
+    label; we take it as the gate rent (see _warm_rent_strict note in the report)."""
+    out, seen_ids = [], set()
+    for _url, payload in api_payloads:
+        if not isinstance(payload, dict):
+            continue
+        for comp in (payload.get("components") or []):
+            effects = comp.get("effects") or {}
+            for marker in _iter_cluster_markers(effects):
+                fid = marker[-1]
+                text = _strip_tags(marker[3]) or str(marker[2])
+                plz = first_plz(text)
+                price = parse_euro(text)  # single headline rent (no Warm/Kalt label)
+
+                rooms = ""
+                mr = re.search(r"(\d(?:[.,]\d)?)\s*Zimmer", text, re.IGNORECASE)
+                if mr:
+                    rooms = mr.group(1)
+                size = ""
+                ms = re.search(r"(\d{2,3}(?:[.,]\d+)?)\s*m", text)
+                if ms:
+                    size = ms.group(1) + " m2"
+                wbs = "ja" if re.search(r"\bWBS\b", text, re.IGNORECASE) else "?"
+
+                uid = f"inberlin:{fid}"
+                if uid in seen_ids:
+                    continue
+                seen_ids.add(uid)
+                out.append(Listing(
+                    uid=uid, source="inBerlin",
+                    title=(text[:60] or "Landeseigene Wohnung"),
+                    address=text[:100], plz=plz, rooms=rooms, size=size,
+                    warm_rent=price, wbs=wbs, url=INBERLIN_FINDER,
+                ))
+    return out
+
+
 def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
                     net_log: list = None) -> list:
     """Build listings from the captured API JSON if available, else from rendered
@@ -764,23 +830,25 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
         except Exception as e:
             log.warning("inberlin debug dump failed: %s", e)
 
-    listings = []
-    seen_ids = set()
+    # --- Preferred path: the Livewire map-data payload (all listings, structured) ---
+    listings = _listings_from_livewire(api_payloads)
+    seen_ids = {li.uid for li in listings}
 
-    # --- Preferred path: the listings JSON the Angular app fetched ---
-    for _url, payload in api_payloads:
-        for d in _iter_listing_dicts(payload):
-            url = _url_from_dict(d)
-            # A record is "apartment-like" only if its text carries a Berlin PLZ
-            # or a rooms/size signal — filters out unrelated JSON (menus, config).
-            blob = json.dumps(d, ensure_ascii=False)
-            if not (first_plz(blob) or re.search(r"\d\s*Zimmer|\d{2,3}\s*m", blob, re.I)):
-                continue
-            li = _listing_from_text(" ".join(blob.split()), url, "inBerlin")
-            if li.uid in seen_ids:
-                continue
-            seen_ids.add(li.uid)
-            listings.append(li)
+    # --- Secondary path: any other listings-like JSON dicts the app fetched ---
+    if not listings:
+        for _url, payload in api_payloads:
+            for d in _iter_listing_dicts(payload):
+                url = _url_from_dict(d)
+                # A record is "apartment-like" only if its text carries a Berlin PLZ
+                # or a rooms/size signal — filters out unrelated JSON (menus, config).
+                blob = json.dumps(d, ensure_ascii=False)
+                if not (first_plz(blob) or re.search(r"\d\s*Zimmer|\d{2,3}\s*m", blob, re.I)):
+                    continue
+                li = _listing_from_text(" ".join(blob.split()), url, "inBerlin")
+                if li.uid in seen_ids:
+                    continue
+                seen_ids.add(li.uid)
+                listings.append(li)
 
     # --- Fallback path: rendered cards (only if JSON yielded nothing) ---
     if not listings:
@@ -825,13 +893,14 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
     if not listings:
         _dump_inberlin_diagnostics(page, api_payloads, net_log or [])
 
-    # Enrich new listings missing PLZ or warm rent from their detail page. The
-    # detail pages live on the seven companies' own sites; enrich_from_detail is
-    # text-based and source-agnostic, so it works across all of them.
+    # Enrich new listings missing PLZ or warm rent from their detail page. Only
+    # for listings whose URL is an actual per-flat page — Livewire map listings
+    # point at the finder itself (navigation is an in-app @click, not an href), so
+    # there's nothing to enrich and their fields already come from the payload.
     for li in listings:
         if li.uid in seen:
             continue
-        if not li.plz or not li.warm_rent:
+        if li.url and li.url != INBERLIN_FINDER and (not li.plz or not li.warm_rent):
             log.info("enriching %s from detail page", li.uid)
             enrich_from_detail(browser, li)
 
