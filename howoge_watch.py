@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
 """
 howoge_watch.py
-Watches HOWOGE (and later other Berlin landeseigene) for new flats and pushes a
-Telegram alert the second a match appears.
+Watches Berlin's landeseigene (state-owned) housing companies for new flats and
+pushes a Telegram alert the second a match appears.
+
+Coverage: the primary source is the inberlinwohnen.de Wohnungsfinder, which
+aggregates live vacancies from ALL SEVEN state-owned companies at once (berlinovo,
+degewo, GESOBAU, Gewobag, HOWOGE, STADT UND LAND, WBM). The direct HOWOGE scraper
+is kept as a FALLBACK, run only when the aggregator yields nothing.
 
 Designed to run 24/7 on any always-on machine (old laptop, Raspberry Pi, small VPS).
 
 Filter logic: price (warm rent) <= MAX_WARM_RENT  AND  postal code in ALLOWED_PLZ.
 Rooms are NOT filtered (price is the gate).
 
-Architecture: each landlord is a "source" = a function returning a list[Listing].
-Source functions receive (seen: set, debug: bool). Add a new source -> append it to
-SOURCES. Everything else (filter, dedup, alert) is shared.
+Architecture: each landlord/portal is a "source" = a function returning a
+list[Listing], signature (seen: set, debug: bool). Sources are split into
+PRIMARY_SOURCES and FALLBACK_SOURCES; _scrape_worker runs the fallback only if the
+primary produced no listings, so a flat present in both never double-alerts.
+Everything else (filter, dedup, enrichment, alerting, self-restart) is shared.
 
-Why a headless browser: the HOWOGE search renders listings with JavaScript, so a
-plain requests.get() returns an empty page. Playwright loads the page like a real
-browser and reads the rendered cards.
+Why a headless browser: both the HOWOGE search and the inberlinwohnen Wohnungsfinder
+render listings with JavaScript (and sit behind a WAF), so a plain requests.get()
+returns an empty/blocked page. Playwright loads the page like a real browser, reads
+the rendered cards, and can also capture the listings JSON the app fetches.
 
 ----------------------------------------------------------------------
 SETUP (once)
@@ -38,8 +46,9 @@ SETUP (once)
 
 Debug a source whose selectors stopped matching:
    python3 howoge_watch.py --debug
-   -> dumps the rendered HTML to debug_howoge.html so the card structure can be
-      re-checked.
+   -> dumps rendered HTML (debug_howoge.html, debug_inberlin.html) plus the
+      captured listings JSON (debug_inberlin_api.json) so the card structure /
+      JSON field names can be re-checked and the selectors tuned.
 ----------------------------------------------------------------------
 """
 
@@ -537,9 +546,252 @@ def _parse_and_enrich(page, browser, seen: set, debug: bool) -> list:
     return listings
 
 
-# Register sources here. To add degewo/gewobag/etc later, write a fetch_xxx()
-# with signature (seen: set, debug: bool = False) -> list[Listing] and append it.
-SOURCES = [fetch_howoge]
+# ----------------------------------------------------------------------
+# SOURCE: inberlinwohnen.de — aggregator for ALL SEVEN landeseigene companies
+# (berlinovo, degewo, GESOBAU, Gewobag, HOWOGE, STADT UND LAND, WBM).
+# One poll of the Wohnungsfinder returns every state-owned vacancy at once, so
+# this single source replaces what would otherwise be seven separate scrapers.
+# ----------------------------------------------------------------------
+
+INBERLIN_FINDER = "https://www.inberlinwohnen.de/wohnungsfinder/"
+INBERLIN_BASE   = "https://www.inberlinwohnen.de"
+
+
+def _warm_rent_strict(text: str) -> float:
+    """Warm rent ONLY when an explicit warm-rent label is present. Unlike
+    extract_warm_rent(), this does NOT fall back to 'first euro in the text' —
+    aggregator card/JSON text is full of other numbers (cold rent, deposit,
+    fees), so a loose grab would mis-set the rent the price filter gates on.
+    Returns 0.0 when warm rent isn't explicit, which routes the listing through
+    the same detail-page enrichment HOWOGE uses to confirm the real warm rent."""
+    m = WARM_RE.search(strip_rent_noise(text or ""))
+    return parse_euro(m.group(2)) if m else 0.0
+
+
+def _listing_from_text(text_flat: str, url: str, source_label: str) -> "Listing":
+    """Build a Listing from a blob of listing text + its detail URL, reusing the
+    same battle-tested regex extractors as the HOWOGE parser. Schema-agnostic on
+    purpose: works whether the text came from a rendered card or a stringified
+    JSON record, so it survives the aggregator changing its exact markup."""
+    plz  = first_plz(text_flat)
+    warm = _warm_rent_strict(text_flat)
+
+    rooms = ""
+    mr = re.search(r"(\d(?:[.,]\d)?)\s*Zimmer", text_flat, re.IGNORECASE)
+    if mr:
+        rooms = mr.group(1)
+    size = ""
+    ms = re.search(r"(\d{2,3}(?:[.,]\d)?)\s*m", text_flat)
+    if ms:
+        size = ms.group(1) + " m2"
+    wbs = "ja" if re.search(r"\bWBS\b", text_flat, re.IGNORECASE) else "?"
+
+    # Stable id from the detail URL (works across all seven company domains); fall
+    # back to a hash so a listing without a clean slug still dedups consistently.
+    slug = ""
+    mslug = re.search(r"([\w-]{4,})(?:\.html?)?$", (url or "").split("?")[0].rstrip("/"))
+    if mslug:
+        slug = mslug.group(1)
+    if not slug:
+        slug = str(abs(hash(url or text_flat)) % (10 ** 12))
+    uid = f"inberlin:{slug}"
+
+    return Listing(
+        uid=uid, source=source_label, title=(text_flat[:60] or "Landeseigene Wohnung"),
+        address=(plz or "") + " " + text_flat[:80],
+        plz=plz, rooms=rooms, size=size, warm_rent=warm, wbs=wbs, url=url or INBERLIN_FINDER,
+    )
+
+
+def _iter_listing_dicts(payload):
+    """Yield apartment-like dicts from a decoded JSON payload of unknown shape:
+    the API may return a bare list, or wrap it under a key like data/results/
+    items/wohnungen/immos. Best-effort and defensive."""
+    if isinstance(payload, list):
+        for x in payload:
+            if isinstance(x, dict):
+                yield x
+    elif isinstance(payload, dict):
+        for key in ("data", "results", "items", "wohnungen", "immos",
+                    "objekte", "properties", "entries", "hits"):
+            v = payload.get(key)
+            if isinstance(v, list):
+                for x in v:
+                    if isinstance(x, dict):
+                        yield x
+
+
+def _url_from_dict(d: dict) -> str:
+    """Find the detail-page link inside an apartment record of unknown schema."""
+    for k in ("url", "link", "detailUrl", "detail_url", "permalink", "href", "expose"):
+        v = d.get(k)
+        if isinstance(v, str) and v.startswith("http"):
+            return v
+    # otherwise: any http-looking string value in the record
+    for v in d.values():
+        if isinstance(v, str) and v.startswith("http"):
+            return v
+    return ""
+
+
+def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
+    """Load the inberlinwohnen Wohnungsfinder (an Angular app behind a JSON REST
+    API, itself fed by the companies' OpenImmo feeds) in a headless browser. The
+    site's WAF blocks plain requests, so we drive a real browser like HOWOGE,
+    prefer the intercepted listings JSON, and fall back to reading rendered cards.
+    New listings missing PLZ/warm rent are enriched from their detail page.
+
+    NOTE ON TUNING: the card selectors and JSON field discovery below are a best
+    effort written without live access to the site. Run once with --debug to dump
+    debug_inberlin.html and debug_inberlin_api.json, then confirm/adjust the
+    CARD_SELECTORS and the JSON handling. Until validated this may return []; that
+    is safe — the HOWOGE fallback source keeps coverage and nothing double-alerts.
+    """
+    from playwright.sync_api import sync_playwright
+
+    listings = []
+    api_payloads = []  # (url, decoded_json) captured from XHR/fetch responses
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=HEADLESS, timeout=BROWSER_LAUNCH_TIMEOUT_MS)
+        try:
+            page = browser.new_page(user_agent=USER_AGENT)
+
+            def _capture(resp):
+                try:
+                    if resp.request.resource_type not in ("xhr", "fetch"):
+                        return
+                    if "application/json" not in resp.headers.get("content-type", ""):
+                        return
+                    api_payloads.append((resp.url, resp.json()))
+                except Exception:
+                    pass
+
+            page.on("response", _capture)
+            response = page.goto(INBERLIN_FINDER, wait_until="domcontentloaded", timeout=30000)
+
+            # The Angular app fetches listings after load; give it a moment and
+            # wait for either its JSON or rendered cards to arrive.
+            try:
+                page.wait_for_load_state("networkidle", timeout=20000)
+            except Exception:
+                pass
+            try:
+                page.wait_for_selector(
+                    "[class*='wohnung'],[class*='result'],article,li a[href*='http']",
+                    timeout=10000)
+            except Exception:
+                if not api_payloads:
+                    diagnose_block(page, response)
+
+            listings = _parse_inberlin(page, browser, seen, api_payloads, debug)
+        finally:
+            try:
+                browser.close()
+            except Exception:
+                pass
+
+    log.info("inberlinwohnen: parsed %d listings", len(listings))
+    return listings
+
+
+def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool) -> list:
+    """Build listings from the captured API JSON if available, else from rendered
+    DOM cards. Split out of fetch_inberlinwohnen so the browser teardown lives in
+    a single finally block (same shape as _parse_and_enrich)."""
+    if debug:
+        try:
+            Path("debug_inberlin.html").write_text(page.content(), encoding="utf-8")
+            Path("debug_inberlin_api.json").write_text(
+                json.dumps([{"url": u, "json": j} for u, j in api_payloads],
+                           ensure_ascii=False, indent=2)[:2_000_000],
+                encoding="utf-8")
+            log.info("Wrote debug_inberlin.html and debug_inberlin_api.json "
+                     "(%d API payloads captured)", len(api_payloads))
+        except Exception as e:
+            log.warning("inberlin debug dump failed: %s", e)
+
+    listings = []
+    seen_ids = set()
+
+    # --- Preferred path: the listings JSON the Angular app fetched ---
+    for _url, payload in api_payloads:
+        for d in _iter_listing_dicts(payload):
+            url = _url_from_dict(d)
+            # A record is "apartment-like" only if its text carries a Berlin PLZ
+            # or a rooms/size signal — filters out unrelated JSON (menus, config).
+            blob = json.dumps(d, ensure_ascii=False)
+            if not (first_plz(blob) or re.search(r"\d\s*Zimmer|\d{2,3}\s*m", blob, re.I)):
+                continue
+            li = _listing_from_text(" ".join(blob.split()), url, "inBerlin")
+            if li.uid in seen_ids:
+                continue
+            seen_ids.add(li.uid)
+            listings.append(li)
+
+    # --- Fallback path: rendered cards (only if JSON yielded nothing) ---
+    if not listings:
+        # TUNE: candidate selectors for a listing card/link on the finder page.
+        CARD_SELECTORS = [
+            "a[href*='/wohnungssuche/']",
+            "[class*='wohnung'] a[href*='http']",
+            "[class*='result'] a[href*='http']",
+            "article a[href*='http']",
+        ]
+        cards = []
+        for sel in CARD_SELECTORS:
+            cards = page.query_selector_all(sel)
+            if cards:
+                log.info("inberlinwohnen: matched %d nodes with '%s'", len(cards), sel)
+                break
+        for c in cards:
+            href = c.get_attribute("href") or ""
+            if not href.startswith("http"):
+                href = INBERLIN_BASE + href
+            block = c
+            try:
+                parent = c.evaluate_handle("el => el.closest('article, li, div')")
+                el = parent.as_element() if parent else None
+                if el:
+                    block = el
+            except Exception:
+                pass
+            text_flat = " ".join(((block.inner_text() if block else c.inner_text()) or "").split())
+            if not (first_plz(text_flat) or re.search(r"\d\s*Zimmer|\d{2,3}\s*m", text_flat, re.I)):
+                continue
+            li = _listing_from_text(text_flat, href, "inBerlin")
+            if li.uid in seen_ids:
+                continue
+            seen_ids.add(li.uid)
+            listings.append(li)
+
+    # Enrich new listings missing PLZ or warm rent from their detail page. The
+    # detail pages live on the seven companies' own sites; enrich_from_detail is
+    # text-based and source-agnostic, so it works across all of them.
+    for li in listings:
+        if li.uid in seen:
+            continue
+        if not li.plz or not li.warm_rent:
+            log.info("enriching %s from detail page", li.uid)
+            enrich_from_detail(browser, li)
+
+    return listings
+
+
+# ----------------------------------------------------------------------
+# SOURCE REGISTRATION
+# ----------------------------------------------------------------------
+# PRIMARY = the aggregator (covers all seven landeseigene incl. HOWOGE).
+# FALLBACK = the direct HOWOGE scraper, run ONLY when the primary yields nothing
+# (aggregator down, markup changed, or still being tuned). Because a healthy
+# aggregator always returns listings, the fallback stays dormant in steady state,
+# so HOWOGE flats — which appear in both — never double-alert.
+# To add another aggregator/company later, append its fetch_xxx to PRIMARY_SOURCES.
+PRIMARY_SOURCES  = [fetch_inberlinwohnen]
+FALLBACK_SOURCES = [fetch_howoge]
+
+# Back-compat alias: some tooling/tests import SOURCES. It is the full set that
+# *can* run; orchestration (primary-then-fallback) lives in _scrape_worker.
+SOURCES = PRIMARY_SOURCES + FALLBACK_SOURCES
 
 
 # ----------------------------------------------------------------------
@@ -549,26 +801,41 @@ SOURCES = [fetch_howoge]
 _RETRY: dict = {}  # uid -> number of inconclusive PLZ-unknown attempts
 
 
-def _scrape_worker(q, seen_snapshot, debug):
-    """Run all sources and put (status, payload, n_ok, detail) on the queue. Runs
-    in a CHILD process so that a hung Playwright/Chromium call cannot wedge the
-    watcher — the parent kills this process if it overruns CYCLE_TIMEOUT_SECONDS,
-    and the child's exit reclaims all browser memory regardless of leaks.
+def _run_sources(sources, seen_snapshot, debug):
+    """Run a list of sources, returning (listings, n_ok, last_error). n_ok counts
+    sources that returned without raising (an empty list still counts as healthy)."""
+    out, n_ok, detail = [], 0, ""
+    for src in sources:
+        try:
+            out.extend(src(seen_snapshot, debug=debug))
+            n_ok += 1
+        except Exception as e:
+            detail = f"{getattr(src, '__name__', src)}: {e}"
+            log.error("Source %s failed: %s", getattr(src, "__name__", src), e)
+    return out, n_ok, detail
 
-    n_ok = how many sources returned without raising (an empty list still counts
-    as a healthy run). detail = last source error, so the parent can tell a real
-    outage (every source raised) apart from a clean-but-empty poll."""
+
+def _scrape_worker(q, seen_snapshot, debug):
+    """Run the primary sources, then the fallback sources only if the primaries
+    produced NO listings (down, empty, or still being tuned). Puts
+    (status, payload, n_ok, detail) on the queue. Runs in a CHILD process so a
+    hung Playwright/Chromium call cannot wedge the watcher — the parent kills this
+    process if it overruns CYCLE_TIMEOUT_SECONDS, and the child's exit reclaims all
+    browser memory regardless of leaks.
+
+    n_ok = how many sources returned without raising, across primary + any fallback
+    run. detail = last source error, so the parent can tell a real outage (every
+    source raised) apart from a clean-but-empty poll. Running the fallback only
+    when the primary is empty keeps HOWOGE (present in both) from double-alerting."""
     try:
-        out = []
-        n_ok = 0
-        detail = ""
-        for src in SOURCES:
-            try:
-                out.extend(src(seen_snapshot, debug=debug))
-                n_ok += 1
-            except Exception as e:
-                detail = f"{getattr(src, '__name__', src)}: {e}"
-                log.error("Source %s failed: %s", getattr(src, "__name__", src), e)
+        out, n_ok, detail = _run_sources(PRIMARY_SOURCES, seen_snapshot, debug)
+        if not out:
+            log.info("primary sources yielded 0 listings — running fallback %s",
+                     [getattr(s, "__name__", s) for s in FALLBACK_SOURCES])
+            fb_out, fb_ok, fb_detail = _run_sources(FALLBACK_SOURCES, seen_snapshot, debug)
+            out.extend(fb_out)
+            n_ok += fb_ok
+            detail = fb_detail or detail
         q.put(("ok", out, n_ok, detail))
     except Exception as e:
         q.put(("err", [], 0, repr(e)))
