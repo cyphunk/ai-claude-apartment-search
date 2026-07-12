@@ -634,6 +634,41 @@ def _url_from_dict(d: dict) -> str:
     return ""
 
 
+def _dismiss_consent(page) -> None:
+    """Best-effort dismissal of a cookie/consent banner (Usercentrics/Cookiebot/
+    custom), which otherwise overlays and blocks the listings from rendering. Tries
+    common German accept-button labels and known CMP selectors; never raises."""
+    labels = ["Alle akzeptieren", "Alle Cookies akzeptieren", "Akzeptieren",
+              "Zustimmen", "Einverstanden", "Accept all", "Accept", "OK"]
+    selectors = [
+        "#usercentrics-root",  # shadow-DOM CMP; handled via role/text below too
+        "[data-testid='uc-accept-all-button']",
+        "button#onetrust-accept-btn-handler",
+        "[aria-label*='akzeptier' i]",
+    ]
+    try:
+        for sel in selectors:
+            try:
+                el = page.query_selector(sel)
+                if el and el.is_visible():
+                    el.click(timeout=2000)
+                    page.wait_for_timeout(800)
+                    return
+            except Exception:
+                pass
+        for label in labels:
+            try:
+                btn = page.get_by_role("button", name=label, exact=False)
+                if btn and btn.count() > 0:
+                    btn.first.click(timeout=2000)
+                    page.wait_for_timeout(800)
+                    return
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     """Load the inberlinwohnen Wohnungsfinder (an Angular app behind a JSON REST
     API, itself fed by the companies' OpenImmo feeds) in a headless browser. The
@@ -663,18 +698,34 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
                     ct = resp.headers.get("content-type", "")
                     if rt in ("xhr", "fetch", "document"):
                         net_log.append((rt, resp.status, ct.split(";")[0], resp.url))
-                    if rt in ("xhr", "fetch") and "application/json" in ct:
-                        api_payloads.append((resp.url, resp.json()))
+                    # Capture JSON even when the server mislabels the content-type:
+                    # try the declared JSON first, else best-effort parse the body.
+                    if rt in ("xhr", "fetch"):
+                        if "json" in ct:
+                            api_payloads.append((resp.url, resp.json()))
+                        elif "html" not in ct and "javascript" not in ct:
+                            body = resp.text()
+                            if body[:1].strip() in ("{", "["):
+                                api_payloads.append((resp.url, json.loads(body)))
                 except Exception:
                     pass
 
             page.on("response", _capture)
             response = page.goto(INBERLIN_FINDER, wait_until="domcontentloaded", timeout=30000)
 
+            # German sites gate content behind a cookie-consent banner; dismiss it
+            # so the listings actually render, then let lazy content load.
+            _dismiss_consent(page)
+
             # The Angular app fetches listings after load; give it a moment and
             # wait for either its JSON or rendered cards to arrive.
             try:
                 page.wait_for_load_state("networkidle", timeout=20000)
+            except Exception:
+                pass
+            try:
+                page.mouse.wheel(0, 3000)  # nudge any lazy/infinite-scroll rendering
+                page.wait_for_timeout(1500)
             except Exception:
                 pass
             try:
