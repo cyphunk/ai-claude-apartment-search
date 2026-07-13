@@ -239,17 +239,22 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
     if unverified:
         head = ("⚠️ UNVERIFIED: detail page could not be read, "
                 "postal code/rent not confirmed. Check the link.\n")
-    # Address as a Google Maps link (HTML mode); plain text if no address.
+    # Headline: the address, linked to Google Maps (plain label if no address).
     if li.address:
-        addr_line = (f'<a href="{html.escape(maps_url(li), quote=True)}">'
-                     f'{html.escape(li.address)}</a>')
+        headline = (f'<a href="{html.escape(maps_url(li), quote=True)}">'
+                    f'{html.escape(li.address)}</a>')
     else:
-        addr_line = html.escape(li.address)
+        headline = html.escape(li.title or li.source or "Wohnung")
+    # Facts, each shown exactly once (the old bold title duplicated these).
+    facts = [rent]
+    if li.rooms:
+        facts.append(f"{html.escape(li.rooms)} Zi")
+    if li.size:
+        facts.append(html.escape(li.size))
     return (
         head
-        + f"\U0001F3E0 <b>{html.escape(li.title or 'Wohnung')}</b>\n"
-        + f"{addr_line}\n"
-        + f"{rent} | {html.escape(li.rooms)} Zi | {html.escape(li.size)}\n"
+        + f"{headline}\n"
+        + f"{' | '.join(facts)}\n"
         + f"WBS: {html.escape(li.wbs)} | {li.source}\n"
         + f"{li.url}"
     )
