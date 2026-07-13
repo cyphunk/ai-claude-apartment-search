@@ -65,6 +65,7 @@ import multiprocessing as mp
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import requests
 
@@ -216,16 +217,38 @@ def send_status_ping(seen: set, daily_new: int, daily_matches: int, label: str) 
     tg_send(msg)
 
 
+def maps_url(li: Listing) -> str:
+    """Google Maps search link for a listing's address. Cleans the query: strips any
+    'rooms | size | price' prefix, ensures the PLZ and 'Berlin' are present so the
+    pin lands on the right street rather than a same-named road elsewhere."""
+    q = li.address or ""
+    if "€" in q:                       # drop a leading "N Zimmer | X m² | Y €" summary
+        q = q.split("€", 1)[-1]
+    q = q.strip(" |,-")
+    if li.plz and li.plz not in q:
+        q = f"{q} {li.plz}"
+    if "berlin" not in q.lower():
+        q = f"{q}, Berlin"
+    q = " ".join(q.split())
+    return "https://www.google.com/maps/search/?api=1&query=" + quote_plus(q)
+
+
 def format_alert(li: Listing, unverified: bool = False) -> str:
     rent = f"{li.warm_rent:.0f} EUR warm" if li.warm_rent else "rent ?"
     head = ""
     if unverified:
         head = ("⚠️ UNVERIFIED: detail page could not be read, "
                 "postal code/rent not confirmed. Check the link.\n")
+    # Address as a Google Maps link (HTML mode); plain text if no address.
+    if li.address:
+        addr_line = (f'<a href="{html.escape(maps_url(li), quote=True)}">'
+                     f'{html.escape(li.address)}</a>')
+    else:
+        addr_line = html.escape(li.address)
     return (
         head
         + f"\U0001F3E0 <b>{html.escape(li.title or 'Wohnung')}</b>\n"
-        + f"{html.escape(li.address)}\n"
+        + f"{addr_line}\n"
         + f"{rent} | {html.escape(li.rooms)} Zi | {html.escape(li.size)}\n"
         + f"WBS: {html.escape(li.wbs)} | {li.source}\n"
         + f"{li.url}"
@@ -854,7 +877,8 @@ def _listings_from_livewire(api_payloads: list) -> list:
             effects = comp.get("effects") or {}
             for marker in _iter_cluster_markers(effects):
                 fid = marker[-1]
-                text = _strip_tags(marker[3]) or str(marker[2])
+                popup = marker[3] or ""
+                text = _strip_tags(popup) or str(marker[2])
                 plz = first_plz(text)
                 price = parse_euro(text)  # single headline rent (no Warm/Kalt label)
 
@@ -868,14 +892,26 @@ def _listings_from_livewire(api_payloads: list) -> list:
                     size = ms.group(1) + " m2"
                 wbs = "ja" if re.search(r"\bWBS\b", text, re.IGNORECASE) else "?"
 
+                # Split the popup into its visual lines (summary / street / PLZ+district)
+                # so the stored address is a clean street line, not the whole blob —
+                # this is what the Google Maps link in the alert keys off.
+                parts = re.split(r"(?i)<\s*br\s*/?\s*>|</p>|<p[^>]*>|</strong>", popup)
+                lines = [ln for ln in (_strip_tags(p).strip(" ,|") for p in parts) if ln]
+                summary = next((l for l in lines if re.search(r"Zimmer|€|m²|m2", l, re.I)), "")
+                plz_line = next((l for l in lines if first_plz(l)), "")
+                street = next((l for l in lines if l not in (summary, plz_line)), "")
+                district = plz_line.replace(plz, "").strip(" ,") if (plz and plz_line) else ""
+                loc = " ".join(x for x in (plz, district) if x)
+                address = ", ".join(x for x in (street, loc) if x) or text[:100]
+
                 uid = f"inberlin:{fid}"
                 if uid in seen_ids:
                     continue
                 seen_ids.add(uid)
                 out.append(Listing(
                     uid=uid, source="inBerlin",
-                    title=(text[:60] or "Landeseigene Wohnung"),
-                    address=text[:100], plz=plz, rooms=rooms, size=size,
+                    title=(summary or text[:60] or "Landeseigene Wohnung"),
+                    address=address, plz=plz, rooms=rooms, size=size,
                     warm_rent=price, wbs=wbs, url=INBERLIN_FINDER,
                 ))
     return out
