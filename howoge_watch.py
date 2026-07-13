@@ -236,7 +236,10 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
 # HELPERS
 # ----------------------------------------------------------------------
 
-PLZ_RE = re.compile(r"\b(1[0-3]\d{3})\b")          # Berlin PLZ 10xxx..13xxx
+PLZ_RE = re.compile(r"\b(1[0-3]\d{3}|14[01]\d{2})\b")   # Berlin PLZ 10115..14199
+# NB: Berlin runs up to 14199 (Charlottenburg/Zehlendorf/Spandau). The old
+# 10xxx-13xxx pattern left 14xxx unparsed, so those listings had an empty PLZ and
+# slipped past the postal-code gate (which only rejects a KNOWN out-of-area PLZ).
 EURO_RE = re.compile(r"(\d[\d.\s]*[,]\d{2}|\d[\d.]*)\s*(?:EUR|€)")
 
 # Safe rent labels: all mean total monthly warm rent.
