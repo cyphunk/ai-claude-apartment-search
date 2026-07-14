@@ -843,30 +843,63 @@ _COMPANY_HOSTS = ("howoge", "degewo", "gesobau", "gewobag",
 
 
 def _capture_detail_response(page, fid) -> None:
-    """DIAGNOSTIC (temporary): call the finder's Livewire findApartmentItem(fid) and
-    capture the resulting /livewire/update response(s), so a CORRECT per-flat link
-    resolver can be built from the real response shape (the previous one scraped
-    page-wide anchors and returned the wrong flat's link). Logs the company URLs
-    found in the response and dumps the raw responses to the /data volume. Does NOT
-    change any listing's link. Best-effort; never raises."""
+    """DIAGNOSTIC (temporary): learn how the finder loads a flat's detail + its
+    company link. The prior invocation made 0 network calls, so this introspects the
+    Livewire API and the page's own outbound links, tries to invoke findApartmentItem
+    correctly, and captures any Livewire response. Logs a summary and dumps the full
+    detail to /data/inberlin_detail.json. Changes no link. Never raises."""
+    info = {"fid": fid}
+
+    # (1) Livewire API shape + components and their server-side methods.
+    try:
+        info["livewire"] = page.evaluate(
+            "() => { const w=window.Livewire; if(!w) return {present:false};"
+            " const o={present:true, keys:Object.keys(w)};"
+            " try { const a=w.all?w.all():[]; o.n=a.length;"
+            "   o.comps=a.map(c=>({id:c.id,name:c.name,"
+            "     methods:(c.__instance&&c.__instance.effects&&c.__instance.effects.methods)||"
+            "             (c.effects&&c.effects.methods)||null})); }"
+            " catch(e){ o.err=String(e); } return o; }")
+    except Exception as e:
+        info["livewire_err"] = str(e)
+
+    # (2) Outbound company/ibw links already present on the loaded page, each with
+    #     the flat id from its card's wire:id — shows whether a per-flat mapping
+    #     exists in the DOM and for how many flats.
+    try:
+        info["page_links"] = page.evaluate(
+            "() => { const out=[]; const rx=/t=ibw|howoge|degewo|gesobau|gewobag|"
+            "stadtundland|wbm|berlinovo/i;"
+            " for (const a of document.querySelectorAll('a[href]')) {"
+            "   const h=a.href||''; if(!rx.test(h)) continue;"
+            "   const card=a.closest('[wire\\\\:id]');"
+            "   out.push({href:h, wid:card?card.getAttribute('wire:id'):''}); }"
+            " return {count:out.length, sample:out.slice(0,20)}; }")
+    except Exception as e:
+        info["page_links_err"] = str(e)
+
+    # (3) Try to invoke findApartmentItem(fid) via whatever API exists, capturing
+    #     any /livewire response it triggers.
     bodies = []
 
     def _on(resp):
         try:
-            if "/livewire/update" in resp.url:
-                bodies.append(resp.text())
+            if "/livewire" in resp.url:
+                bodies.append({"url": resp.url, "body": resp.text()[:40000]})
         except Exception:
             pass
 
     page.on("response", _on)
     try:
         page.evaluate(
-            "(id) => { if (window.Livewire) for (const c of "
-            "((window.Livewire.all && window.Livewire.all()) || [])) "
-            "{ try { c.call('findApartmentItem', id); } catch (e) {} } }", fid)
-        page.wait_for_timeout(2500)
+            "(id) => { const w=window.Livewire; if(!w) return; const a=w.all?w.all():[];"
+            " for (const c of a) {"
+            "   try { if (c.call) c.call('findApartmentItem', id); } catch(e){}"
+            "   try { if (w.find && c.id) w.find(c.id).call('findApartmentItem', id); } catch(e){} } }",
+            fid)
+        page.wait_for_timeout(3000)
     except Exception as e:
-        log.info("inberlin detail-capture: call failed for %s: %s", fid, e)
+        info["invoke_err"] = str(e)
     finally:
         try:
             page.remove_listener("response", _on)
@@ -875,18 +908,17 @@ def _capture_detail_response(page, fid) -> None:
 
     urls = []
     for b in bodies:
-        for m in re.findall(r'https?:\\?/\\?/[^"\\ )]+', b or ""):
+        for m in re.findall(r'https?:\\?/\\?/[^"\\ )]+', b.get("body", "")):
             u = m.replace("\\/", "/")
             if any(h in u.lower() for h in _COMPANY_HOSTS):
                 urls.append(u)
-    # de-dupe preserving order
-    urls = list(dict.fromkeys(urls))
-    log.info("inberlin detail-capture fid=%s: %d livewire responses, %d company urls: %s",
-             fid, len(bodies), len(urls), urls[:8])
+    info["responses_n"] = len(bodies)
+    info["response_company_urls"] = list(dict.fromkeys(urls))[:8]
+    log.info("inberlin CAPTURE: %s", json.dumps(info, ensure_ascii=False)[:1900])
     try:
         (SEEN_FILE.parent / "inberlin_detail.json").write_text(
-            json.dumps({"fid": fid, "company_urls": urls, "responses": bodies},
-                       ensure_ascii=False)[:2_000_000], encoding="utf-8")
+            json.dumps({"info": info, "responses": bodies}, ensure_ascii=False)[:2_000_000],
+            encoding="utf-8")
     except Exception as e:
         log.info("inberlin detail-capture dump failed: %s", e)
 
