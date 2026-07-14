@@ -117,8 +117,8 @@ MAX_CONSECUTIVE_FAILURES        = int(os.environ.get("MAX_CONSECUTIVE_FAILURES",
 #   False -> mark seen and skip silently
 ALERT_ON_UNVERIFIED = True
 
-# Relevant postal codes. Prenzlauer Berg, Pankow (Ortsteil), Kreuzberg,
-# Friedrichshain, North Neukoelln, Alt-Treptow. Edit freely.
+# Relevant postal codes: areas within ~20 min by bike of Prenzlauer Berg
+# (Schoenhauser Allee 56 / 10437). Edit freely.
 ALLOWED_PLZ = {
     # Prenzlauer Berg
     "10119", "10405", "10407", "10409", "10435", "10437", "10439",
@@ -132,6 +132,14 @@ ALLOWED_PLZ = {
     "12043", "12045", "12047", "12049", "12053",
     # Alt-Treptow (PLZ 12435 also covers Plaenterwald)
     "12435",
+    # Mitte (10119 already listed under Prenzlauer Berg)
+    "10115", "10117", "10178", "10179",
+    # Gesundbrunnen
+    "13347", "13355", "13357", "13359",
+    # Wedding (closest to Prenzlauer Berg)
+    "13349",
+    # Weissensee (west part; 13088 is the further-east half, left out)
+    "13086",
 }
 
 # On Railway: set SEEN_PATH=/data/seen_listings.json and mount a volume at /data
