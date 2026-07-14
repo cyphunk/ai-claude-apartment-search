@@ -838,6 +838,59 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     return listings
 
 
+_COMPANY_HOSTS = ("howoge", "degewo", "gesobau", "gewobag",
+                  "stadtundland", "stadt-und-land", "wbm", "berlinovo")
+
+
+def _capture_detail_response(page, fid) -> None:
+    """DIAGNOSTIC (temporary): call the finder's Livewire findApartmentItem(fid) and
+    capture the resulting /livewire/update response(s), so a CORRECT per-flat link
+    resolver can be built from the real response shape (the previous one scraped
+    page-wide anchors and returned the wrong flat's link). Logs the company URLs
+    found in the response and dumps the raw responses to the /data volume. Does NOT
+    change any listing's link. Best-effort; never raises."""
+    bodies = []
+
+    def _on(resp):
+        try:
+            if "/livewire/update" in resp.url:
+                bodies.append(resp.text())
+        except Exception:
+            pass
+
+    page.on("response", _on)
+    try:
+        page.evaluate(
+            "(id) => { if (window.Livewire) for (const c of "
+            "((window.Livewire.all && window.Livewire.all()) || [])) "
+            "{ try { c.call('findApartmentItem', id); } catch (e) {} } }", fid)
+        page.wait_for_timeout(2500)
+    except Exception as e:
+        log.info("inberlin detail-capture: call failed for %s: %s", fid, e)
+    finally:
+        try:
+            page.remove_listener("response", _on)
+        except Exception:
+            pass
+
+    urls = []
+    for b in bodies:
+        for m in re.findall(r'https?:\\?/\\?/[^"\\ )]+', b or ""):
+            u = m.replace("\\/", "/")
+            if any(h in u.lower() for h in _COMPANY_HOSTS):
+                urls.append(u)
+    # de-dupe preserving order
+    urls = list(dict.fromkeys(urls))
+    log.info("inberlin detail-capture fid=%s: %d livewire responses, %d company urls: %s",
+             fid, len(bodies), len(urls), urls[:8])
+    try:
+        (SEEN_FILE.parent / "inberlin_detail.json").write_text(
+            json.dumps({"fid": fid, "company_urls": urls, "responses": bodies},
+                       ensure_ascii=False)[:2_000_000], encoding="utf-8")
+    except Exception as e:
+        log.info("inberlin detail-capture dump failed: %s", e)
+
+
 def _iter_cluster_markers(obj):
     """Yield map-marker lists from a Livewire mapData structure of unknown nesting.
     Each marker is [lat, lon, summary, popup_html, id] — the shape the finder emits
@@ -999,13 +1052,16 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
     if not listings:
         _dump_inberlin_diagnostics(page, api_payloads, net_log or [])
 
-    # NOTE: inberlin listings link to the finder page (INBERLIN_FINDER). A previous
-    # attempt to resolve a per-flat deep link via the Livewire findApartmentItem
-    # action was REMOVED — it did not read the opened flat's own link but an
-    # arbitrary company detail link from the page, so different flats got the same
-    # (wrong) URL. A generic-but-correct finder link is better than a confident
-    # wrong one. (To do real per-flat links, capture a findApartmentItem detail
-    # response and map each flat id to its company URL — a separate task.)
+    # inberlin listings link to the finder page (INBERLIN_FINDER) for now. The old
+    # per-flat resolver was removed (it returned an arbitrary page-wide link, so
+    # different flats got the same wrong URL). To rebuild it CORRECTLY, capture one
+    # findApartmentItem response per cycle and inspect its real shape — this only
+    # logs/dumps, it does not change any link.
+    if listings:
+        try:
+            _capture_detail_response(page, listings[0].uid.split(":", 1)[-1])
+        except Exception as e:
+            log.info("inberlin detail-capture skipped: %s", e)
     return listings
 
 
