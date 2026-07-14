@@ -854,7 +854,12 @@ def _read_rendered_cards(page) -> list:
             " const out=[]; const seen=new Set();"
             " for (const a of document.querySelectorAll('a[href]')) {"
             "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
-            "   seen.add(h); const card=a.closest('[wire\\\\:id]');"
+            "   seen.add(h);"
+            "   let el=a, card=null;"  // climb to the actual card: the nearest
+            "   for (let i=0;i<10 && el;i++,el=el.parentElement){"  // ancestor whose
+            "     const t=el.innerText||'';"                        // text has rooms+price
+            "     if(/zimmer/i.test(t) && /€/.test(t)){card=el;break;} }"
+            "   if(!card) card=a.closest('[wire\\\\:id]');"
             "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
             " return out; }") or []
     except Exception as e:
