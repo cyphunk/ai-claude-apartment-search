@@ -117,30 +117,46 @@ MAX_CONSECUTIVE_FAILURES        = int(os.environ.get("MAX_CONSECUTIVE_FAILURES",
 #   False -> mark seen and skip silently
 ALERT_ON_UNVERIFIED = True
 
-# Relevant postal codes: areas within ~20 min by bike of Prenzlauer Berg
-# (Schoenhauser Allee 56 / 10437). Edit freely.
-ALLOWED_PLZ = {
+# Reference address the "how far" distances are measured from.
+REF_ADDRESS = "Schoenhauser Allee 56, 10437 Berlin"
+
+# Allowed postal codes -> (distance_km, note).
+#  * distance_km: straight-line km from REF_ADDRESS to the PLZ centroid — a rough
+#    neighbourhood-level "how far", shown in the alert next to the ZIP.
+#  * note: why it's included when it isn't simply nearby. "ÖPNV" = it sits on a
+#    direct public-transport line to the reference address, so it's quick to reach
+#    despite the distance. Empty note = included for proximity.
+# The filter gate (passes_filter) uses only the keys; edit freely.
+PLZ_INFO = {
     # Prenzlauer Berg
-    "10119", "10405", "10407", "10409", "10435", "10437", "10439",
-    # Pankow (Ortsteil)
-    "13187", "13189",
+    "10119": (1.5, ""), "10405": (1.3, ""), "10407": (3.1, ""), "10409": (1.9, ""),
+    "10435": (0.6, ""), "10437": (0.4, ""), "10439": (0.9, ""),
+    # Pankow
+    "13187": (3.2, ""), "13189": (1.9, "ÖPNV"),
     # Kreuzberg
-    "10961", "10963", "10965", "10967", "10969", "10997", "10999",
+    "10961": (5.7, ""), "10963": (5.5, ""), "10965": (6.6, ""), "10967": (5.9, ""),
+    "10969": (4.6, ""), "10997": (5.0, ""), "10999": (5.4, ""),
     # Friedrichshain
-    "10243", "10245", "10247", "10249",
+    "10243": (3.7, ""), "10245": (5.5, ""), "10247": (4.5, ""), "10249": (2.9, ""),
     # North Neukoelln
-    "12043", "12045", "12047", "12049", "12053",
-    # Alt-Treptow (PLZ 12435 also covers Plaenterwald)
-    "12435",
-    # Mitte (10119 already listed under Prenzlauer Berg)
-    "10115", "10117", "10178", "10179",
+    "12043": (7.6, ""), "12045": (6.5, ""), "12047": (6.1, ""), "12049": (7.4, ""),
+    "12053": (7.6, ""),
+    # Alt-Treptow
+    "12435": (7.7, ""),
+    # Mitte
+    "10115": (2.7, ""), "10117": (3.7, ""), "10178": (2.4, ""), "10179": (3.5, ""),
     # Gesundbrunnen
-    "13347", "13355", "13357", "13359",
-    # Wedding (closest to Prenzlauer Berg)
-    "13349",
-    # Weissensee (west part; 13088 is the further-east half, left out)
-    "13086",
+    "13347": (3.3, ""), "13355": (1.5, ""), "13357": (2.4, ""), "13359": (2.6, ""),
+    # Wedding
+    "13349": (5.0, ""), "13353": (4.2, ""),
+    # Weissensee
+    "13086": (2.6, "ÖPNV"), "13089": (3.4, "ÖPNV"),
+    # Moabit
+    "10557": (3.9, "ÖPNV"), "10559": (4.6, "ÖPNV"),
+    # Lichtenberg (Fennpfuhl)
+    "10369": (4.0, "ÖPNV"),
 }
+ALLOWED_PLZ = set(PLZ_INFO)
 
 # On Railway: set SEEN_PATH=/data/seen_listings.json and mount a volume at /data
 SEEN_FILE = Path(os.environ.get("SEEN_PATH", "seen_listings.json"))
@@ -245,6 +261,17 @@ def maps_url(li: Listing) -> str:
     return "https://www.google.com/maps?q=" + quote_plus(q)
 
 
+def plz_detail(li: Listing) -> str:
+    """Trailing ' · <km> km[ · <note>]' shown next to the ZIP in an alert, looked up
+    from PLZ_INFO. Empty when the listing's PLZ isn't in the dataset (e.g. an
+    unverified alert whose postal code could not be read)."""
+    info = PLZ_INFO.get(li.plz)
+    if not info:
+        return ""
+    km, note = info
+    return f" · {km:.1f} km" + (f" · {note}" if note else "")
+
+
 def format_alert(li: Listing, unverified: bool = False) -> str:
     rent = f"{li.warm_rent:.0f} EUR warm" if li.warm_rent else "rent ?"
     head = ""
@@ -261,7 +288,8 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
     # so it survives copy-paste and Telegram still auto-links it. The listing link
     # sits above it. Both are plain URLs, so a copied message keeps them verbatim.
     lines = [
-        html.escape(li.address or li.title or li.source or "Wohnung"),
+        html.escape(li.address or li.title or li.source or "Wohnung")
+        + html.escape(plz_detail(li)),
         " | ".join(facts),
         f"WBS: {html.escape(li.wbs)} | {li.source}",
         li.url,
