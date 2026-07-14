@@ -838,71 +838,6 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     return listings
 
 
-_COMPANY_HOSTS = ("howoge", "degewo", "gesobau", "gewobag",
-                  "stadtundland", "stadt-und-land", "wbm", "berlinovo")
-
-
-def _resolve_deep_link(page, fid) -> str:
-    """Resolve a per-flat deep link for listing <fid>. Navigation on the finder is
-    the Livewire server method findApartmentItem(id), which opens a detail overlay;
-    that overlay carries the real link (a shareable finder URL and/or an outbound
-    link to the owning company's application page). We invoke the method via the
-    Livewire JS API, then look for (a) the browser URL turning into a deep link, or
-    (b) an outbound company/expose anchor in the overlay. Returns '' if none found
-    (caller keeps the generic finder URL). Best-effort; never raises."""
-    try:
-        page.evaluate(
-            """(id) => {
-                if (!window.Livewire) return;
-                const comps = (window.Livewire.all && window.Livewire.all()) || [];
-                for (const c of comps) {
-                    try { c.call('findApartmentItem', id); } catch (e) {}
-                }
-            }""", fid)
-    except Exception as e:
-        log.info("inberlin deep-link: Livewire call failed for %s: %s", fid, e)
-        return ""
-    try:
-        page.wait_for_load_state("networkidle", timeout=8000)
-    except Exception:
-        pass
-    try:
-        page.wait_for_timeout(700)
-    except Exception:
-        pass
-
-    # (a) URL became a shareable deep link — must reference THIS flat id so a stale
-    # overlay URL from a previous resolve is never mis-assigned to another listing.
-    try:
-        url = page.url
-        if (url and url.rstrip("/") != INBERLIN_FINDER.rstrip("/")
-                and str(fid) in url
-                and re.search(r"(wohnung|flat|expose|angebot|id=|/\d{3,})", url, re.IGNORECASE)):
-            return url
-    except Exception:
-        pass
-
-    # (b) outbound "apply / view offer" anchor in the opened overlay
-    try:
-        hrefs = page.eval_on_selector_all(
-            "a[href]", "els => els.map(e => e.href)") or []
-    except Exception:
-        hrefs = []
-    # A detail link points at a specific flat, not a company homepage/footer link,
-    # so require a detail-ish path or an id in it.
-    detailish = re.compile(r"(expose|detail|immobil|angebot|wohnung|objekt|/\d{3,})",
-                           re.IGNORECASE)
-    for h in hrefs:
-        hl = (h or "").lower()
-        if any(c in hl for c in _COMPANY_HOSTS) and detailish.search(hl):
-            return h
-    for h in hrefs:
-        hl = (h or "").lower()
-        if "inberlinwohnen.de" in hl and detailish.search(hl) and hl.rstrip("/") != INBERLIN_FINDER.rstrip("/"):
-            return h
-    return ""
-
-
 def _iter_cluster_markers(obj):
     """Yield map-marker lists from a Livewire mapData structure of unknown nesting.
     Each marker is [lat, lon, summary, popup_html, id] — the shape the finder emits
@@ -1064,30 +999,13 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
     if not listings:
         _dump_inberlin_diagnostics(page, api_payloads, net_log or [])
 
-    # Resolve a per-flat deep link for NEW listings that pass the filter (i.e. the
-    # ones we're about to alert on) — a handful per cycle at most. Livewire map
-    # listings otherwise point at the generic finder page. Kept to matches only so
-    # the extra Livewire round-trips stay cheap and within the cycle budget.
-    probed = False
-    for li in listings:
-        # One-time verification probe per cycle: resolve+log the first listing's
-        # deep link even if already seen, so the resolver can be confirmed from logs.
-        if not probed:
-            probed = True
-            fid = li.uid.split(":", 1)[-1]
-            link = _resolve_deep_link(page, fid)
-            log.info("inberlin deep-link probe: %s -> %s", li.uid, link or "(none)")
-            if li.uid not in seen and passes_filter(li) and link:
-                li.url = link
-            continue
-        if li.uid in seen or not passes_filter(li):
-            continue
-        fid = li.uid.split(":", 1)[-1]
-        link = _resolve_deep_link(page, fid)
-        if link:
-            log.info("inberlin deep-link: %s -> %s", li.uid, link)
-            li.url = link
-
+    # NOTE: inberlin listings link to the finder page (INBERLIN_FINDER). A previous
+    # attempt to resolve a per-flat deep link via the Livewire findApartmentItem
+    # action was REMOVED — it did not read the opened flat's own link but an
+    # arbitrary company detail link from the page, so different flats got the same
+    # (wrong) URL. A generic-but-correct finder link is better than a confident
+    # wrong one. (To do real per-flat links, capture a findApartmentItem detail
+    # response and map each flat id to its company URL — a separate task.)
     return listings
 
 
