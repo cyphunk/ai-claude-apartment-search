@@ -855,9 +855,10 @@ def _read_rendered_cards(page) -> list:
             " for (const a of document.querySelectorAll('a[href]')) {"
             "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
             "   seen.add(h);"
-            "   let el=a, card=null;"  // climb to the actual card: the nearest
-            "   for (let i=0;i<10 && el;i++,el=el.parentElement){"  // ancestor whose
-            "     const t=el.innerText||'';"                        // text has rooms+price
+            # climb to the real card: nearest ancestor whose text has rooms + price
+            "   let el=a, card=null;"
+            "   for (let i=0;i<10 && el;i++,el=el.parentElement){"
+            "     const t=el.innerText||'';"
             "     if(/zimmer/i.test(t) && /€/.test(t)){card=el;break;} }"
             "   if(!card) card=a.closest('[wire\\\\:id]');"
             "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
