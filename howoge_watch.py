@@ -854,7 +854,13 @@ def _read_rendered_cards(page) -> list:
             " const out=[]; const seen=new Set();"
             " for (const a of document.querySelectorAll('a[href]')) {"
             "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
-            "   seen.add(h); const card=a.closest('[wire\\\\:id]');"
+            "   seen.add(h);"
+            # climb to the real card: nearest ancestor whose text has rooms + price
+            "   let el=a, card=null;"
+            "   for (let i=0;i<10 && el;i++,el=el.parentElement){"
+            "     const t=el.innerText||'';"
+            "     if(/zimmer/i.test(t) && /€/.test(t)){card=el;break;} }"
+            "   if(!card) card=a.closest('[wire\\\\:id]');"
             "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
             " return out; }") or []
     except Exception as e:
@@ -910,22 +916,28 @@ def _attach_deep_links(page, listings: list, seen: set) -> None:
             li.url = href
             log.info("inberlin deep-link: %s -> %s", li.uid, href)
 
-    # TEMP SELF-TEST (verifies matching against the live page without waiting for a
-    # new listing; remove once confirmed): how many of ALL current listings match a
-    # rendered card, with a couple of examples.
+    # TEMP SELF-TEST + MATCH-DEBUG (remove once the matcher is confirmed): report the
+    # match count, and dump real card text vs listing tokens to /data so the matching
+    # can be aligned to the finder's actual card format (0/N means a format mismatch).
     try:
-        ex = []
-        matched = 0
-        for li in listings:
-            h = _match_card_link(li, cards)
-            if h:
-                matched += 1
-                if len(ex) < 4:
-                    ex.append(f"{li.address.split(',')[0]}->{re.sub(r'https?://(www.)?','',h)[:22]}")
-        log.info("inberlin deep-link SELFTEST: %d cards, %d/%d listings matched; e.g. %s",
-                 len(cards), matched, len(listings), ex)
-    except Exception:
-        pass
+        matched = sum(1 for li in listings if _match_card_link(li, cards))
+        log.info("inberlin deep-link SELFTEST: %d cards, %d/%d listings matched",
+                 len(cards), matched, len(listings))
+        dbg = {
+            "cards": [c["t"][:320] for c in cards[:4]],
+            "listings": [{"address": li.address, "size": li.size, "rooms": li.rooms,
+                          "cold": li.cold_rent,
+                          "street_tok": li.address.split(",")[0].strip().lower(),
+                          "price_tok": _de_price(li.cold_rent) if li.cold_rent else ""}
+                         for li in listings[:6]],
+        }
+        log.info("inberlin MATCH-DEBUG card0=%r | listing0=%r",
+                 (cards[0]["t"][:220] if cards else ""),
+                 (dbg["listings"][0] if dbg["listings"] else {}))
+        (SEEN_FILE.parent / "inberlin_match_debug.json").write_text(
+            json.dumps(dbg, ensure_ascii=False)[:800000], encoding="utf-8")
+    except Exception as e:
+        log.info("inberlin match-debug failed: %s", e)
 
 
 def _iter_cluster_markers(obj):
