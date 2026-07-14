@@ -11,8 +11,10 @@ is kept as a FALLBACK, run only when the aggregator yields nothing.
 
 Designed to run 24/7 on any always-on machine (old laptop, Raspberry Pi, small VPS).
 
-Filter logic: price (warm rent) <= MAX_WARM_RENT  AND  postal code in ALLOWED_PLZ.
-Rooms are NOT filtered (price is the gate).
+Filter logic: warm rent <= MAX_WARM_RENT  AND  postal code in ALLOWED_PLZ.
+Rooms are NOT filtered (price is the gate). The inberlinwohnen finder only publishes
+the net cold rent, so for that source the warm rent is estimated (cold * WARM_COLD_
+FACTOR) for the gate, and the alert shows the cold rent with the estimate alongside.
 
 Architecture: each landlord/portal is a "source" = a function returning a
 list[Listing], signature (seen: set, debug: bool). Sources are split into
@@ -77,6 +79,12 @@ TG_TOKEN = os.environ.get("HOWOGE_TG_TOKEN", "")   # from @BotFather
 TG_CHAT  = os.environ.get("HOWOGE_TG_CHAT", "")    # your numeric chat id
 
 MAX_WARM_RENT         = int(os.environ.get("MAX_WARM_RENT", "1400"))
+# The inberlinwohnen finder only publishes the NET COLD rent (Nettokaltmiete); the
+# real warm rent (cold + operating + heating) is not in its data. We estimate warm
+# from cold with this factor so the MAX_WARM_RENT gate stays meaningful and uniform
+# across sources (HOWOGE already yields a real warm rent). Tune via env; 1.35 ≈ a
+# typical Berlin uplift, so cold <= ~1037 EUR passes a 1400 EUR warm ceiling.
+WARM_COLD_FACTOR      = float(os.environ.get("WARM_COLD_FACTOR", "1.35"))
 POLL_INTERVAL_SECONDS = int(os.environ.get("POLL_INTERVAL_SECONDS", "240"))
 MAX_DETAIL_RETRIES    = int(os.environ.get("MAX_DETAIL_RETRIES", "3"))
 
@@ -191,9 +199,11 @@ class Listing:
     plz: str
     rooms: str
     size: str
-    warm_rent: float  # EUR, 0.0 if unknown
+    warm_rent: float  # EUR warm — actual (HOWOGE) or estimated from cold (inberlin)
     wbs: str          # "ja" / "nein" / "?"
     url: str
+    cold_rent: float = 0.0  # EUR net cold, when that's the figure the source gives
+                            # (inberlin). 0.0 means the source already gave warm rent.
 
 
 # ----------------------------------------------------------------------
@@ -253,7 +263,9 @@ def maps_url(li: Listing) -> str:
     q = q.strip(" |,-")
     if li.plz and li.plz not in q:
         q = f"{q} {li.plz}"
-    if "berlin" not in q.lower():
+    # A Berlin PLZ already pins the city, so don't append a redundant ", Berlin";
+    # only add it as a fallback when the query carries no postal code at all.
+    if not re.search(r"\b\d{5}\b", q):
         q = f"{q}, Berlin"
     q = " ".join(q.split())
     # Use the short ?q= form: it has no '&', so the bare URL we print at the end of
@@ -273,7 +285,14 @@ def plz_detail(li: Listing) -> str:
 
 
 def format_alert(li: Listing, unverified: bool = False) -> str:
-    rent = f"{li.warm_rent:.0f} EUR warm" if li.warm_rent else "rent ?"
+    # Show the figure the source actually gives, labelled honestly: inberlin lists
+    # NET COLD rent (with an estimated warm alongside); HOWOGE gives real warm rent.
+    if li.cold_rent:
+        rent = f"{li.cold_rent:.0f} EUR kalt (~{li.warm_rent:.0f} warm est.)"
+    elif li.warm_rent:
+        rent = f"{li.warm_rent:.0f} EUR warm"
+    else:
+        rent = "rent ?"
     head = ""
     if unverified:
         head = ("⚠️ UNVERIFIED: detail page could not be read, "
@@ -924,7 +943,10 @@ def _listings_from_livewire(api_payloads: list) -> list:
                 popup = marker[3] or ""
                 text = _strip_tags(popup) or str(marker[2])
                 plz = first_plz(text)
-                price = parse_euro(text)  # single headline rent (no Warm/Kalt label)
+                # The finder's single price is the NET COLD rent (Nettokaltmiete).
+                # Keep it as cold_rent and estimate warm for the filter/display.
+                cold = parse_euro(text)
+                warm_est = round(cold * WARM_COLD_FACTOR) if cold else 0.0
 
                 rooms = ""
                 mr = re.search(r"(\d(?:[.,]\d)?)\s*Zimmer", text, re.IGNORECASE)
@@ -956,7 +978,8 @@ def _listings_from_livewire(api_payloads: list) -> list:
                     uid=uid, source="inBerlin",
                     title=(summary or text[:60] or "Landeseigene Wohnung"),
                     address=address, plz=plz, rooms=rooms, size=size,
-                    warm_rent=price, wbs=wbs, url=INBERLIN_FINDER,
+                    warm_rent=warm_est, wbs=wbs, url=INBERLIN_FINDER,
+                    cold_rent=cold,
                 ))
     return out
 
