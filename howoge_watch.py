@@ -118,7 +118,7 @@ MAX_CONSECUTIVE_FAILURES        = int(os.environ.get("MAX_CONSECUTIVE_FAILURES",
 ALERT_ON_UNVERIFIED = True
 
 # Relevant postal codes. Prenzlauer Berg, Pankow (Ortsteil), Kreuzberg,
-# Friedrichshain, North Neukoelln. Edit freely.
+# Friedrichshain, North Neukoelln, Alt-Treptow. Edit freely.
 ALLOWED_PLZ = {
     # Prenzlauer Berg
     "10119", "10405", "10407", "10409", "10435", "10437", "10439",
@@ -130,6 +130,8 @@ ALLOWED_PLZ = {
     "10243", "10245", "10247", "10249",
     # North Neukoelln
     "12043", "12045", "12047", "12049", "12053",
+    # Alt-Treptow (PLZ 12435 also covers Plaenterwald)
+    "12435",
 }
 
 # On Railway: set SEEN_PATH=/data/seen_listings.json and mount a volume at /data
