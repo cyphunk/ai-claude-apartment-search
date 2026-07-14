@@ -862,6 +862,35 @@ def _read_rendered_cards(page) -> list:
         return []
 
 
+def _match_card_link(li, cards) -> str:
+    """Return the company detail link of the rendered card that matches this listing
+    UNAMBIGUOUSLY (by street + size + rooms + price), or "" if none / ambiguous."""
+    if not li.address:
+        return ""
+    street = li.address.split(",")[0].strip().lower()
+    if not street:
+        return ""
+    size_num = (li.size or "").split()[0] if li.size else ""
+    size_variants = {s for s in (size_num, size_num.replace(".", ","),
+                                 size_num.replace(",", ".")) if s}
+    price = _de_price(li.cold_rent) if li.cold_rent else ""
+
+    def _match(c):
+        t = c["t"]
+        if street not in t:
+            return False
+        if size_variants and not any(s in t for s in size_variants):
+            return False
+        if li.rooms and f"{li.rooms} zimmer" not in t:
+            return False
+        if price and price not in t:
+            return False
+        return True
+
+    hits = [c for c in cards if _match(c)]
+    return hits[0]["href"] if len(hits) == 1 else ""
+
+
 def _attach_deep_links(page, listings: list, seen: set) -> None:
     """Set li.url to the flat's REAL company detail link when the listing can be
     matched UNAMBIGUOUSLY to one of the finder's rendered cards. We match by street
@@ -869,38 +898,34 @@ def _attach_deep_links(page, listings: list, seen: set) -> None:
     never be set (ambiguous/unrendered -> keep the finder link). New listings, which
     are what we alert on, are normally on the newest-first first page, so they render.
     """
-    new = [li for li in listings if li.uid not in seen and li.address]
-    if not new:
-        return
     cards = [{"href": c["href"], "t": re.sub(r"\s+", " ", (c.get("text") or "")).strip().lower()}
              for c in _read_rendered_cards(page)]
     if not cards:
         return
-    for li in new:
-        street = li.address.split(",")[0].strip().lower()
-        if not street:
+    for li in listings:
+        if li.uid in seen:
             continue
-        size_num = (li.size or "").split()[0] if li.size else ""
-        size_variants = {s for s in (size_num, size_num.replace(".", ","),
-                                     size_num.replace(",", ".")) if s}
-        price = _de_price(li.cold_rent) if li.cold_rent else ""
+        href = _match_card_link(li, cards)
+        if href:
+            li.url = href
+            log.info("inberlin deep-link: %s -> %s", li.uid, href)
 
-        def _match(c):
-            t = c["t"]
-            if street not in t:
-                return False
-            if size_variants and not any(s in t for s in size_variants):
-                return False
-            if li.rooms and f"{li.rooms} zimmer" not in t:
-                return False
-            if price and price not in t:
-                return False
-            return True
-
-        hits = [c for c in cards if _match(c)]
-        if len(hits) == 1:
-            li.url = hits[0]["href"]
-            log.info("inberlin deep-link: %s -> %s", li.uid, li.url)
+    # TEMP SELF-TEST (verifies matching against the live page without waiting for a
+    # new listing; remove once confirmed): how many of ALL current listings match a
+    # rendered card, with a couple of examples.
+    try:
+        ex = []
+        matched = 0
+        for li in listings:
+            h = _match_card_link(li, cards)
+            if h:
+                matched += 1
+                if len(ex) < 4:
+                    ex.append(f"{li.address.split(',')[0]}->{re.sub(r'https?://(www.)?','',h)[:22]}")
+        log.info("inberlin deep-link SELFTEST: %d cards, %d/%d listings matched; e.g. %s",
+                 len(cards), matched, len(listings), ex)
+    except Exception:
+        pass
 
 
 def _iter_cluster_markers(obj):
