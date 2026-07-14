@@ -838,89 +838,69 @@ def fetch_inberlinwohnen(seen: set, debug: bool = False) -> list:
     return listings
 
 
-_COMPANY_HOSTS = ("howoge", "degewo", "gesobau", "gewobag",
-                  "stadtundland", "stadt-und-land", "wbm", "berlinovo")
+def _de_price(v: float) -> str:
+    """1037.0 -> '1.037,00'  (German formatting, matching how the finder prints it)."""
+    return f"{v:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
 
 
-def _capture_detail_response(page, fid) -> None:
-    """DIAGNOSTIC (temporary): learn how the finder loads a flat's detail + its
-    company link. The prior invocation made 0 network calls, so this introspects the
-    Livewire API and the page's own outbound links, tries to invoke findApartmentItem
-    correctly, and captures any Livewire response. Logs a summary and dumps the full
-    detail to /data/inberlin_detail.json. Changes no link. Never raises."""
-    info = {"fid": fid}
-
-    # (1) Livewire API shape + components and their server-side methods.
+def _read_rendered_cards(page) -> list:
+    """The finder renders ~10 apartment cards, each carrying the owning company's
+    real detail link. Return [{href, text}] for those cards (company detail links
+    only, not footer/homepage links). Best-effort."""
     try:
-        info["livewire"] = page.evaluate(
-            "() => { const w=window.Livewire; if(!w) return {present:false};"
-            " const o={present:true, keys:Object.keys(w)};"
-            " try { const a=w.all?w.all():[]; o.n=a.length;"
-            "   o.comps=a.map(c=>({id:c.id,name:c.name,"
-            "     methods:(c.__instance&&c.__instance.effects&&c.__instance.effects.methods)||"
-            "             (c.effects&&c.effects.methods)||null})); }"
-            " catch(e){ o.err=String(e); } return o; }")
-    except Exception as e:
-        info["livewire_err"] = str(e)
-
-    # (2) Outbound company/ibw links already present on the loaded page, each with
-    #     the flat id from its card's wire:id — shows whether a per-flat mapping
-    #     exists in the DOM and for how many flats.
-    try:
-        info["page_links"] = page.evaluate(
-            "() => { const out=[]; const rx=/t=ibw|howoge|degewo|gesobau|gewobag|"
-            "stadtundland|wbm|berlinovo/i;"
+        return page.evaluate(
+            "() => { const host=/howoge|degewo|gesobau|gewobag|stadtundland|wbm|berlinovo/i;"
+            " const det=/detail|mietangebote|properties|immo_ref|wohnung-id|t=ibw/i;"
+            " const out=[]; const seen=new Set();"
             " for (const a of document.querySelectorAll('a[href]')) {"
-            "   const h=a.href||''; if(!rx.test(h)) continue;"
-            "   const card=a.closest('[wire\\\\:id]');"
-            "   out.push({href:h, wid:card?card.getAttribute('wire:id'):''}); }"
-            " return {count:out.length, sample:out.slice(0,20)}; }")
+            "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
+            "   seen.add(h); const card=a.closest('[wire\\\\:id]');"
+            "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
+            " return out; }") or []
     except Exception as e:
-        info["page_links_err"] = str(e)
+        log.info("inberlin deep-link: reading rendered cards failed: %s", e)
+        return []
 
-    # (3) Try to invoke findApartmentItem(fid) via whatever API exists, capturing
-    #     any /livewire response it triggers.
-    bodies = []
 
-    def _on(resp):
-        try:
-            if "/livewire" in resp.url:
-                bodies.append({"url": resp.url, "body": resp.text()[:40000]})
-        except Exception:
-            pass
+def _attach_deep_links(page, listings: list, seen: set) -> None:
+    """Set li.url to the flat's REAL company detail link when the listing can be
+    matched UNAMBIGUOUSLY to one of the finder's rendered cards. We match by street
+    + size + rooms + price and assign only on a unique match, so a wrong link can
+    never be set (ambiguous/unrendered -> keep the finder link). New listings, which
+    are what we alert on, are normally on the newest-first first page, so they render.
+    """
+    new = [li for li in listings if li.uid not in seen and li.address]
+    if not new:
+        return
+    cards = [{"href": c["href"], "t": re.sub(r"\s+", " ", (c.get("text") or "")).strip().lower()}
+             for c in _read_rendered_cards(page)]
+    if not cards:
+        return
+    for li in new:
+        street = li.address.split(",")[0].strip().lower()
+        if not street:
+            continue
+        size_num = (li.size or "").split()[0] if li.size else ""
+        size_variants = {s for s in (size_num, size_num.replace(".", ","),
+                                     size_num.replace(",", ".")) if s}
+        price = _de_price(li.cold_rent) if li.cold_rent else ""
 
-    page.on("response", _on)
-    try:
-        page.evaluate(
-            "(id) => { const w=window.Livewire; if(!w) return; const a=w.all?w.all():[];"
-            " for (const c of a) {"
-            "   try { if (c.call) c.call('findApartmentItem', id); } catch(e){}"
-            "   try { if (w.find && c.id) w.find(c.id).call('findApartmentItem', id); } catch(e){} } }",
-            fid)
-        page.wait_for_timeout(3000)
-    except Exception as e:
-        info["invoke_err"] = str(e)
-    finally:
-        try:
-            page.remove_listener("response", _on)
-        except Exception:
-            pass
+        def _match(c):
+            t = c["t"]
+            if street not in t:
+                return False
+            if size_variants and not any(s in t for s in size_variants):
+                return False
+            if li.rooms and f"{li.rooms} zimmer" not in t:
+                return False
+            if price and price not in t:
+                return False
+            return True
 
-    urls = []
-    for b in bodies:
-        for m in re.findall(r'https?:\\?/\\?/[^"\\ )]+', b.get("body", "")):
-            u = m.replace("\\/", "/")
-            if any(h in u.lower() for h in _COMPANY_HOSTS):
-                urls.append(u)
-    info["responses_n"] = len(bodies)
-    info["response_company_urls"] = list(dict.fromkeys(urls))[:8]
-    log.info("inberlin CAPTURE: %s", json.dumps(info, ensure_ascii=False)[:1900])
-    try:
-        (SEEN_FILE.parent / "inberlin_detail.json").write_text(
-            json.dumps({"info": info, "responses": bodies}, ensure_ascii=False)[:2_000_000],
-            encoding="utf-8")
-    except Exception as e:
-        log.info("inberlin detail-capture dump failed: %s", e)
+        hits = [c for c in cards if _match(c)]
+        if len(hits) == 1:
+            li.url = hits[0]["href"]
+            log.info("inberlin deep-link: %s -> %s", li.uid, li.url)
 
 
 def _iter_cluster_markers(obj):
@@ -1084,16 +1064,13 @@ def _parse_inberlin(page, browser, seen: set, api_payloads: list, debug: bool,
     if not listings:
         _dump_inberlin_diagnostics(page, api_payloads, net_log or [])
 
-    # inberlin listings link to the finder page (INBERLIN_FINDER) for now. The old
-    # per-flat resolver was removed (it returned an arbitrary page-wide link, so
-    # different flats got the same wrong URL). To rebuild it CORRECTLY, capture one
-    # findApartmentItem response per cycle and inspect its real shape — this only
-    # logs/dumps, it does not change any link.
-    if listings:
-        try:
-            _capture_detail_response(page, listings[0].uid.split(":", 1)[-1])
-        except Exception as e:
-            log.info("inberlin detail-capture skipped: %s", e)
+    # Attach the flat's real company detail link where a NEW listing matches a
+    # rendered finder card uniquely (see _attach_deep_links). Unmatched listings
+    # keep the finder-page link. A wrong link is never assigned.
+    try:
+        _attach_deep_links(page, listings, seen)
+    except Exception as e:
+        log.info("inberlin deep-link step skipped: %s", e)
     return listings
 
 
