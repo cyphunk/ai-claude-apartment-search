@@ -230,7 +230,9 @@ def maps_url(li: Listing) -> str:
     if "berlin" not in q.lower():
         q = f"{q}, Berlin"
     q = " ".join(q.split())
-    return "https://www.google.com/maps/search/?api=1&query=" + quote_plus(q)
+    # Use the short ?q= form: it has no '&', so the bare URL we print at the end of
+    # the alert stays intact through a copy-paste (no HTML-entity mangling).
+    return "https://www.google.com/maps?q=" + quote_plus(q)
 
 
 def format_alert(li: Listing, unverified: bool = False) -> str:
@@ -239,20 +241,24 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
     if unverified:
         head = ("⚠️ UNVERIFIED: detail page could not be read, "
                 "postal code/rent not confirmed. Check the link.\n")
-    # Address as a Google Maps link (HTML mode); plain text if no address.
+    # Facts, each shown exactly once (the old bold title duplicated these).
+    facts = [rent]
+    if li.rooms:
+        facts.append(f"{html.escape(li.rooms)} Zi")
+    if li.size:
+        facts.append(html.escape(li.size))
+    # Address is plain text (headline); the map link goes at the END as a bare URL
+    # so it survives copy-paste and Telegram still auto-links it. The listing link
+    # sits above it. Both are plain URLs, so a copied message keeps them verbatim.
+    lines = [
+        html.escape(li.address or li.title or li.source or "Wohnung"),
+        " | ".join(facts),
+        f"WBS: {html.escape(li.wbs)} | {li.source}",
+        li.url,
+    ]
     if li.address:
-        addr_line = (f'<a href="{html.escape(maps_url(li), quote=True)}">'
-                     f'{html.escape(li.address)}</a>')
-    else:
-        addr_line = html.escape(li.address)
-    return (
-        head
-        + f"\U0001F3E0 <b>{html.escape(li.title or 'Wohnung')}</b>\n"
-        + f"{addr_line}\n"
-        + f"{rent} | {html.escape(li.rooms)} Zi | {html.escape(li.size)}\n"
-        + f"WBS: {html.escape(li.wbs)} | {li.source}\n"
-        + f"{li.url}"
-    )
+        lines.append(f"Map: {maps_url(li)}")
+    return head + "\n".join(lines)
 
 
 # ----------------------------------------------------------------------
