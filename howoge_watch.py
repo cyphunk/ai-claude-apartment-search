@@ -971,28 +971,18 @@ def _attach_deep_links(page, listings: list, seen: set) -> None:
             li.warm_rent = real_warm
             li.warm_is_real = True
 
-    # TEMP SELF-TEST + MATCH-DEBUG (remove once the matcher is confirmed): report the
-    # match count, and dump real card text vs listing tokens to /data so the matching
-    # can be aligned to the finder's actual card format (0/N means a format mismatch).
+    # Lightweight ongoing health check: how many of the currently-rendered cards the
+    # matcher can resolve. The finder renders ~10 cards, so a healthy line reads
+    # "10 cards, 10/N listings matched"; a sudden drop toward 0 means the finder's
+    # card/marker format changed and the matcher needs a look — visible in the logs
+    # without deploying a probe. Runs over ALL listings (not just new ones) so it
+    # measures capability, not just this cycle's alerts.
     try:
         matched = sum(1 for li in listings if _match_card(li, cards))
-        log.info("inberlin deep-link SELFTEST: %d cards, %d/%d listings matched",
+        log.info("inberlin deep-link: %d cards, %d/%d listings matched",
                  len(cards), matched, len(listings))
-        dbg = {
-            "cards": [c["t"][:320] for c in cards[:4]],
-            "listings": [{"address": li.address, "size": li.size, "rooms": li.rooms,
-                          "cold": li.cold_rent,
-                          "street_tok": li.address.split(",")[0].strip().lower(),
-                          "price_tok": _de_price(li.cold_rent) if li.cold_rent else ""}
-                         for li in listings[:6]],
-        }
-        log.info("inberlin MATCH-DEBUG card0=%r | listing0=%r",
-                 (cards[0]["t"][:220] if cards else ""),
-                 (dbg["listings"][0] if dbg["listings"] else {}))
-        (SEEN_FILE.parent / "inberlin_match_debug.json").write_text(
-            json.dumps(dbg, ensure_ascii=False)[:800000], encoding="utf-8")
     except Exception as e:
-        log.info("inberlin match-debug failed: %s", e)
+        log.info("inberlin deep-link health check failed: %s", e)
 
 
 def _iter_cluster_markers(obj):
