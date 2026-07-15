@@ -173,6 +173,11 @@ SEEN_FILE = Path(os.environ.get("SEEN_PATH", "seen_listings.json"))
 BLOCK_NOTIFY_FILE = SEEN_FILE.parent / ".block_notified"
 # Same idea for scrape-failure alerts (browser crash, timeout, all sources down).
 FAILURE_NOTIFY_FILE = SEEN_FILE.parent / ".failure_notified"
+# Rolling log of the last few MATCHED listings (full record, not just the uid),
+# so a match can be re-rendered/re-sent later to preview how a code change reports
+# it (see replay_recent / `--replay`). Kept small; lives on the same volume.
+RECENT_MATCHES_FILE = SEEN_FILE.parent / "recent_matches.json"
+RECENT_MATCHES_MAX = 20
 HEADLESS   = True
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
               "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -322,6 +327,45 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
     if li.address:
         lines.append(f"Map: {maps_url(li)}")
     return head + "\n".join(lines)
+
+
+def record_match(li: Listing) -> None:
+    """Append a matched listing (full record) to the rolling recent-matches file,
+    keeping only the last RECENT_MATCHES_MAX. Best-effort: a write failure must never
+    break alerting. This is what `--replay` re-renders to preview a code change."""
+    try:
+        data = []
+        if RECENT_MATCHES_FILE.exists():
+            data = json.loads(RECENT_MATCHES_FILE.read_text())
+        data.append(asdict(li))
+        RECENT_MATCHES_FILE.write_text(
+            json.dumps(data[-RECENT_MATCHES_MAX:], ensure_ascii=False))
+    except Exception as e:
+        log.info("recent-match store failed: %s", e)
+
+
+def replay_recent(n: int, send: bool) -> None:
+    """Re-render the last N matched listings with the CURRENT code and print them;
+    with send=True also push them to Telegram. Lets us preview how a format/enrichment
+    change reports a real match without waiting for a new one. Reads stored fields, so
+    presentation changes (format_alert) are shown exactly; logic that needs the live
+    site (re-matching a deep link) is not re-run — the stored values are used as-is."""
+    if not RECENT_MATCHES_FILE.exists():
+        print("No recent matches recorded yet (nothing has matched since this was "
+              "deployed, or the volume was reset).")
+        return
+    data = json.loads(RECENT_MATCHES_FILE.read_text())[-n:]
+    if not data:
+        print("Recent-matches file is empty.")
+        return
+    known = set(Listing.__dataclass_fields__)          # tolerate schema drift:
+    for i, d in enumerate(data, 1):                    # ignore removed fields, let
+        li = Listing(**{k: v for k, v in d.items() if k in known})  # new ones default
+        msg = format_alert(li)
+        print(f"\n===== recent match {i}/{len(data)} : {li.uid} =====\n{msg}")
+        if send:
+            tg_send(msg)
+    print(f"\nReplayed {len(data)} match(es){' and sent to Telegram' if send else ''}.")
 
 
 # ----------------------------------------------------------------------
@@ -1308,6 +1352,7 @@ def run_once(seen: set, debug: bool = False) -> tuple:
             new_listings += 1
             log.info("MATCH %s | %s EUR | %s", li.uid, li.warm_rent, li.url)
             tg_send(format_alert(li))
+            record_match(li)
             new_matches += 1
             continue
 
@@ -1330,6 +1375,7 @@ def run_once(seen: set, debug: bool = False) -> tuple:
             new_listings += 1
             log.info("unverified alert %s after %d attempts", li.uid, n)
             tg_send(format_alert(li, unverified=True))
+            record_match(li)
             new_matches += 1
         else:
             seen.add(li.uid)
@@ -1341,6 +1387,17 @@ def run_once(seen: set, debug: bool = False) -> tuple:
 
 
 def main():
+    # `--replay [N]` re-renders the last N matched listings (default 5) with the
+    # current code so a change can be previewed; add `--send` to also push them to
+    # Telegram (otherwise it just prints). Does not scrape or touch seen-state.
+    if "--replay" in sys.argv:
+        i = sys.argv.index("--replay")
+        n = 5
+        if i + 1 < len(sys.argv) and sys.argv[i + 1].isdigit():
+            n = int(sys.argv[i + 1])
+        replay_recent(n, send="--send" in sys.argv)
+        return
+
     debug = "--debug" in sys.argv
     seen = load_seen()
     if not seen:
