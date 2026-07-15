@@ -900,10 +900,16 @@ def _read_rendered_cards(page) -> list:
 def _match_card(li, cards):
     """Return the rendered finder card (dict with 'href' and 't') that identifies
     this listing UNAMBIGUOUSLY, else None. Format-agnostic on purpose (card wording
-    varies): we only require the flat's street(+number) and its size (m²) to appear
-    in the card text — these two identify a specific flat. If several cards share
-    street+size, the cold price breaks the tie; if still ambiguous, we return None
-    (keep the finder link) so a wrong link is never assigned."""
+    varies): we require the flat's street(+number), its size (m²) AND its cold rent
+    to appear in the card text. Cold rent is a REQUIRED identifier, not just a
+    tiebreak: two different flats at the same address can share a size, so
+    street+size alone could hand back a same-street/same-size card that is a
+    DIFFERENT flat (e.g. when the listing's own card isn't among the rendered ones).
+    Adding the exact cold rent (to the cent) makes a collision essentially mean the
+    same flat. If two cards still match all three, or none do, we return None (keep
+    the finder link) so a wrong link is never assigned. Cold rent and the card text
+    come from the same finder data, so the price token matches reliably; the
+    street+size-only path is used only when the source gave no cold rent at all."""
     if not li.address:
         return None
     # Street incl. house number = address text before the postal code, comma/space
@@ -915,27 +921,32 @@ def _match_card(li, cards):
     size_num = (li.size or "").split()[0] if li.size else ""
     size_variants = {s for s in (size_num, size_num.replace(".", ","),
                                  size_num.replace(",", ".")) if s and len(s) >= 2}
-    price = _de_price(li.cold_rent) if li.cold_rent else ""
+    # Exact cold rent, with/without the thousands dot ("1.049,50" and "1049,50"),
+    # so a formatting nuance can't drop the match. The cents keep it specific.
+    price_variants = ({_de_price(li.cold_rent), _de_price(li.cold_rent).replace(".", "")}
+                      if li.cold_rent else set())
 
     def _street_size(c):
         if street not in re.sub(r"[\s,]+", " ", c["t"]):
             return False
         return not size_variants or any(s in c["t"] for s in size_variants)
 
+    def _priced(c):
+        return any(p in c["t"] for p in price_variants)
+
     cand = [c for c in cards if _street_size(c)]
-    if len(cand) == 1:
-        return cand[0]
-    if len(cand) > 1 and price:                       # disambiguate by cold price
-        priced = [c for c in cand if price in c["t"]]
-        if len(priced) == 1:
-            return priced[0]
-    return None
+    if price_variants:
+        # Cold rent known -> it MUST match. This both disambiguates same-street/
+        # same-size flats and rejects a lone street+size card whose rent differs
+        # (a different flat), which street+size alone would have wrongly accepted.
+        cand = [c for c in cand if _priced(c)]
+    return cand[0] if len(cand) == 1 else None
 
 
 def _attach_deep_links(page, listings: list, seen: set) -> None:
     """Set li.url to the flat's REAL company detail link when the listing can be
     matched UNAMBIGUOUSLY to one of the finder's rendered cards. We match by street
-    + size + rooms + price and assign only on a unique match, so a wrong link can
+    + size + cold rent and assign only on a unique match, so a wrong link can
     never be set (ambiguous/unrendered -> keep the finder link). New listings, which
     are what we alert on, are normally on the newest-first first page, so they render.
     """
