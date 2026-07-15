@@ -204,6 +204,8 @@ class Listing:
     url: str
     cold_rent: float = 0.0  # EUR net cold, when that's the figure the source gives
                             # (inberlin). 0.0 means the source already gave warm rent.
+    warm_is_real: bool = False  # True once warm_rent is a REAL figure read from the
+                            # matched company card (not the cold*factor estimate).
 
 
 # ----------------------------------------------------------------------
@@ -288,7 +290,11 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
     # Show the figure the source actually gives, labelled honestly: inberlin lists
     # NET COLD rent (with an estimated warm alongside); HOWOGE gives real warm rent.
     if li.cold_rent:
-        rent = f"{li.cold_rent:.0f} EUR kalt (~{li.warm_rent:.0f} warm est.)"
+        if li.warm_is_real and li.warm_rent:
+            # Warm rent read from the matched company card — show it as fact, no "est."
+            rent = f"{li.cold_rent:.0f} EUR kalt ({li.warm_rent:.0f} warm)"
+        else:
+            rent = f"{li.cold_rent:.0f} EUR kalt (~{li.warm_rent:.0f} warm est.)"
     elif li.warm_rent:
         rent = f"{li.warm_rent:.0f} EUR warm"
     else:
@@ -843,6 +849,28 @@ def _de_price(v: float) -> str:
     return f"{v:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
 
 
+# Only explicit warm/total labels, number close after — deliberately conservative:
+# we drop the bare "warm" alternative (would catch "warmwasser") and use a tiny
+# non-digit window (not WARM_RE's 20-char one) so an adjacent cold figure can't leak
+# in. This backs the OPTIONAL warm-rent read from a matched card; when it finds
+# nothing we simply keep the cold*factor estimate, so being strict is the safe choice.
+_CARD_WARM_RE = re.compile(
+    r"(?:bruttowarmmiete|warmmiete|gesamtmiete)\D{0,4}([\d.]+,\d{2})", re.IGNORECASE)
+
+
+def _card_warm_rent(text: str) -> float:
+    """Real warm/total rent from a matched card's text, or 0.0 if not stated.
+    Parses the German number directly (WARM_RE's group drops the '€', which
+    parse_euro then needs, so that path can't be reused here)."""
+    m = _CARD_WARM_RE.search(text or "")
+    if not m:
+        return 0.0
+    try:
+        return float(m.group(1).replace(".", "").replace(",", "."))
+    except ValueError:
+        return 0.0
+
+
 def _read_rendered_cards(page) -> list:
     """The finder renders ~10 apartment cards, each carrying the owning company's
     real detail link. Return [{href, text}] for those cards (company detail links
@@ -855,11 +883,12 @@ def _read_rendered_cards(page) -> list:
             " for (const a of document.querySelectorAll('a[href]')) {"
             "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
             "   seen.add(h);"
-            # climb to the real card: nearest ancestor whose text has rooms + price
+            # climb to the real card: nearest ancestor whose text has a price and a
+            # size (m2) -- stable across card layouts, unlike specific rooms wording
             "   let el=a, card=null;"
             "   for (let i=0;i<10 && el;i++,el=el.parentElement){"
             "     const t=el.innerText||'';"
-            "     if(/zimmer/i.test(t) && /€/.test(t)){card=el;break;} }"
+            "     if(/€/.test(t) && /m²|m2/i.test(t)){card=el;break;} }"
             "   if(!card) card=a.closest('[wire\\\\:id]');"
             "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
             " return out; }") or []
@@ -868,39 +897,56 @@ def _read_rendered_cards(page) -> list:
         return []
 
 
-def _match_card_link(li, cards) -> str:
-    """Return the company detail link of the rendered card that matches this listing
-    UNAMBIGUOUSLY (by street + size + rooms + price), or "" if none / ambiguous."""
+def _match_card(li, cards):
+    """Return the rendered finder card (dict with 'href' and 't') that identifies
+    this listing UNAMBIGUOUSLY, else None. Format-agnostic on purpose (card wording
+    varies): we require the flat's street(+number), its size (m²) AND its cold rent
+    to appear in the card text. Cold rent is a REQUIRED identifier, not just a
+    tiebreak: two different flats at the same address can share a size, so
+    street+size alone could hand back a same-street/same-size card that is a
+    DIFFERENT flat (e.g. when the listing's own card isn't among the rendered ones).
+    Adding the exact cold rent (to the cent) makes a collision essentially mean the
+    same flat. If two cards still match all three, or none do, we return None (keep
+    the finder link) so a wrong link is never assigned. Cold rent and the card text
+    come from the same finder data, so the price token matches reliably; the
+    street+size-only path is used only when the source gave no cold rent at all."""
     if not li.address:
-        return ""
-    street = li.address.split(",")[0].strip().lower()
-    if not street:
-        return ""
+        return None
+    # Street incl. house number = address text before the postal code, comma/space
+    # normalised (the card writes it as "street number" without our commas).
+    m = re.search(r"\b\d{5}\b", li.address)
+    street = re.sub(r"[\s,]+", " ", (li.address[:m.start()] if m else li.address)).strip().lower()
+    if len(street) < 4:
+        return None
     size_num = (li.size or "").split()[0] if li.size else ""
     size_variants = {s for s in (size_num, size_num.replace(".", ","),
-                                 size_num.replace(",", ".")) if s}
-    price = _de_price(li.cold_rent) if li.cold_rent else ""
+                                 size_num.replace(",", ".")) if s and len(s) >= 2}
+    # Exact cold rent, with/without the thousands dot ("1.049,50" and "1049,50"),
+    # so a formatting nuance can't drop the match. The cents keep it specific.
+    price_variants = ({_de_price(li.cold_rent), _de_price(li.cold_rent).replace(".", "")}
+                      if li.cold_rent else set())
 
-    def _match(c):
-        t = c["t"]
-        if street not in t:
+    def _street_size(c):
+        if street not in re.sub(r"[\s,]+", " ", c["t"]):
             return False
-        if size_variants and not any(s in t for s in size_variants):
-            return False
-        if li.rooms and f"{li.rooms} zimmer" not in t:
-            return False
-        if price and price not in t:
-            return False
-        return True
+        return not size_variants or any(s in c["t"] for s in size_variants)
 
-    hits = [c for c in cards if _match(c)]
-    return hits[0]["href"] if len(hits) == 1 else ""
+    def _priced(c):
+        return any(p in c["t"] for p in price_variants)
+
+    cand = [c for c in cards if _street_size(c)]
+    if price_variants:
+        # Cold rent known -> it MUST match. This both disambiguates same-street/
+        # same-size flats and rejects a lone street+size card whose rent differs
+        # (a different flat), which street+size alone would have wrongly accepted.
+        cand = [c for c in cand if _priced(c)]
+    return cand[0] if len(cand) == 1 else None
 
 
 def _attach_deep_links(page, listings: list, seen: set) -> None:
     """Set li.url to the flat's REAL company detail link when the listing can be
     matched UNAMBIGUOUSLY to one of the finder's rendered cards. We match by street
-    + size + rooms + price and assign only on a unique match, so a wrong link can
+    + size + cold rent and assign only on a unique match, so a wrong link can
     never be set (ambiguous/unrendered -> keep the finder link). New listings, which
     are what we alert on, are normally on the newest-first first page, so they render.
     """
@@ -911,16 +957,25 @@ def _attach_deep_links(page, listings: list, seen: set) -> None:
     for li in listings:
         if li.uid in seen:
             continue
-        href = _match_card_link(li, cards)
-        if href:
-            li.url = href
-            log.info("inberlin deep-link: %s -> %s", li.uid, href)
+        card = _match_card(li, cards)
+        if not card:
+            continue
+        li.url = card["href"]
+        log.info("inberlin deep-link: %s -> %s", li.uid, card["href"])
+        # OPTIONAL enrichment (never affects matching): if the matched card spells
+        # out a real warm/gesamtmiete, keep it as the true warm rent so the alert can
+        # show it as fact. If it isn't present, we silently keep the cold*factor
+        # estimate — this is a nice-to-have, not required for the alert to work.
+        real_warm = _card_warm_rent(card["t"])
+        if real_warm:
+            li.warm_rent = real_warm
+            li.warm_is_real = True
 
     # TEMP SELF-TEST + MATCH-DEBUG (remove once the matcher is confirmed): report the
     # match count, and dump real card text vs listing tokens to /data so the matching
     # can be aligned to the finder's actual card format (0/N means a format mismatch).
     try:
-        matched = sum(1 for li in listings if _match_card_link(li, cards))
+        matched = sum(1 for li in listings if _match_card(li, cards))
         log.info("inberlin deep-link SELFTEST: %d cards, %d/%d listings matched",
                  len(cards), matched, len(listings))
         dbg = {
