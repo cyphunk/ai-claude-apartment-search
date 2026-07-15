@@ -204,6 +204,8 @@ class Listing:
     url: str
     cold_rent: float = 0.0  # EUR net cold, when that's the figure the source gives
                             # (inberlin). 0.0 means the source already gave warm rent.
+    warm_is_real: bool = False  # True once warm_rent is a REAL figure read from the
+                            # matched company card (not the cold*factor estimate).
 
 
 # ----------------------------------------------------------------------
@@ -288,7 +290,11 @@ def format_alert(li: Listing, unverified: bool = False) -> str:
     # Show the figure the source actually gives, labelled honestly: inberlin lists
     # NET COLD rent (with an estimated warm alongside); HOWOGE gives real warm rent.
     if li.cold_rent:
-        rent = f"{li.cold_rent:.0f} EUR kalt (~{li.warm_rent:.0f} warm est.)"
+        if li.warm_is_real and li.warm_rent:
+            # Warm rent read from the matched company card — show it as fact, no "est."
+            rent = f"{li.cold_rent:.0f} EUR kalt ({li.warm_rent:.0f} warm)"
+        else:
+            rent = f"{li.cold_rent:.0f} EUR kalt (~{li.warm_rent:.0f} warm est.)"
     elif li.warm_rent:
         rent = f"{li.warm_rent:.0f} EUR warm"
     else:
@@ -843,6 +849,28 @@ def _de_price(v: float) -> str:
     return f"{v:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
 
 
+# Only explicit warm/total labels, number close after — deliberately conservative:
+# we drop the bare "warm" alternative (would catch "warmwasser") and use a tiny
+# non-digit window (not WARM_RE's 20-char one) so an adjacent cold figure can't leak
+# in. This backs the OPTIONAL warm-rent read from a matched card; when it finds
+# nothing we simply keep the cold*factor estimate, so being strict is the safe choice.
+_CARD_WARM_RE = re.compile(
+    r"(?:bruttowarmmiete|warmmiete|gesamtmiete)\D{0,4}([\d.]+,\d{2})", re.IGNORECASE)
+
+
+def _card_warm_rent(text: str) -> float:
+    """Real warm/total rent from a matched card's text, or 0.0 if not stated.
+    Parses the German number directly (WARM_RE's group drops the '€', which
+    parse_euro then needs, so that path can't be reused here)."""
+    m = _CARD_WARM_RE.search(text or "")
+    if not m:
+        return 0.0
+    try:
+        return float(m.group(1).replace(".", "").replace(",", "."))
+    except ValueError:
+        return 0.0
+
+
 def _read_rendered_cards(page) -> list:
     """The finder renders ~10 apartment cards, each carrying the owning company's
     real detail link. Return [{href, text}] for those cards (company detail links
@@ -869,21 +897,21 @@ def _read_rendered_cards(page) -> list:
         return []
 
 
-def _match_card_link(li, cards) -> str:
-    """Return the company detail link of the rendered finder card that identifies
-    this listing UNAMBIGUOUSLY, else "". Format-agnostic on purpose (card wording
+def _match_card(li, cards):
+    """Return the rendered finder card (dict with 'href' and 't') that identifies
+    this listing UNAMBIGUOUSLY, else None. Format-agnostic on purpose (card wording
     varies): we only require the flat's street(+number) and its size (m²) to appear
     in the card text — these two identify a specific flat. If several cards share
-    street+size, the cold price breaks the tie; if still ambiguous, we return ""
+    street+size, the cold price breaks the tie; if still ambiguous, we return None
     (keep the finder link) so a wrong link is never assigned."""
     if not li.address:
-        return ""
+        return None
     # Street incl. house number = address text before the postal code, comma/space
     # normalised (the card writes it as "street number" without our commas).
     m = re.search(r"\b\d{5}\b", li.address)
     street = re.sub(r"[\s,]+", " ", (li.address[:m.start()] if m else li.address)).strip().lower()
     if len(street) < 4:
-        return ""
+        return None
     size_num = (li.size or "").split()[0] if li.size else ""
     size_variants = {s for s in (size_num, size_num.replace(".", ","),
                                  size_num.replace(",", ".")) if s and len(s) >= 2}
@@ -896,12 +924,12 @@ def _match_card_link(li, cards) -> str:
 
     cand = [c for c in cards if _street_size(c)]
     if len(cand) == 1:
-        return cand[0]["href"]
+        return cand[0]
     if len(cand) > 1 and price:                       # disambiguate by cold price
         priced = [c for c in cand if price in c["t"]]
         if len(priced) == 1:
-            return priced[0]["href"]
-    return ""
+            return priced[0]
+    return None
 
 
 def _attach_deep_links(page, listings: list, seen: set) -> None:
@@ -918,16 +946,25 @@ def _attach_deep_links(page, listings: list, seen: set) -> None:
     for li in listings:
         if li.uid in seen:
             continue
-        href = _match_card_link(li, cards)
-        if href:
-            li.url = href
-            log.info("inberlin deep-link: %s -> %s", li.uid, href)
+        card = _match_card(li, cards)
+        if not card:
+            continue
+        li.url = card["href"]
+        log.info("inberlin deep-link: %s -> %s", li.uid, card["href"])
+        # OPTIONAL enrichment (never affects matching): if the matched card spells
+        # out a real warm/gesamtmiete, keep it as the true warm rent so the alert can
+        # show it as fact. If it isn't present, we silently keep the cold*factor
+        # estimate — this is a nice-to-have, not required for the alert to work.
+        real_warm = _card_warm_rent(card["t"])
+        if real_warm:
+            li.warm_rent = real_warm
+            li.warm_is_real = True
 
     # TEMP SELF-TEST + MATCH-DEBUG (remove once the matcher is confirmed): report the
     # match count, and dump real card text vs listing tokens to /data so the matching
     # can be aligned to the finder's actual card format (0/N means a format mismatch).
     try:
-        matched = sum(1 for li in listings if _match_card_link(li, cards))
+        matched = sum(1 for li in listings if _match_card(li, cards))
         log.info("inberlin deep-link SELFTEST: %d cards, %d/%d listings matched",
                  len(cards), matched, len(listings))
         dbg = {
