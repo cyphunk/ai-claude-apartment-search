@@ -855,11 +855,12 @@ def _read_rendered_cards(page) -> list:
             " for (const a of document.querySelectorAll('a[href]')) {"
             "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
             "   seen.add(h);"
-            # climb to the real card: nearest ancestor whose text has rooms + price
+            # climb to the real card: nearest ancestor whose text has a price and a
+            # size (m2) -- stable across card layouts, unlike specific rooms wording
             "   let el=a, card=null;"
             "   for (let i=0;i<10 && el;i++,el=el.parentElement){"
             "     const t=el.innerText||'';"
-            "     if(/zimmer/i.test(t) && /€/.test(t)){card=el;break;} }"
+            "     if(/€/.test(t) && /m²|m2/i.test(t)){card=el;break;} }"
             "   if(!card) card=a.closest('[wire\\\\:id]');"
             "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
             " return out; }") or []
@@ -869,32 +870,38 @@ def _read_rendered_cards(page) -> list:
 
 
 def _match_card_link(li, cards) -> str:
-    """Return the company detail link of the rendered card that matches this listing
-    UNAMBIGUOUSLY (by street + size + rooms + price), or "" if none / ambiguous."""
+    """Return the company detail link of the rendered finder card that identifies
+    this listing UNAMBIGUOUSLY, else "". Format-agnostic on purpose (card wording
+    varies): we only require the flat's street(+number) and its size (m²) to appear
+    in the card text — these two identify a specific flat. If several cards share
+    street+size, the cold price breaks the tie; if still ambiguous, we return ""
+    (keep the finder link) so a wrong link is never assigned."""
     if not li.address:
         return ""
-    street = li.address.split(",")[0].strip().lower()
-    if not street:
+    # Street incl. house number = address text before the postal code, comma/space
+    # normalised (the card writes it as "street number" without our commas).
+    m = re.search(r"\b\d{5}\b", li.address)
+    street = re.sub(r"[\s,]+", " ", (li.address[:m.start()] if m else li.address)).strip().lower()
+    if len(street) < 4:
         return ""
     size_num = (li.size or "").split()[0] if li.size else ""
     size_variants = {s for s in (size_num, size_num.replace(".", ","),
-                                 size_num.replace(",", ".")) if s}
+                                 size_num.replace(",", ".")) if s and len(s) >= 2}
     price = _de_price(li.cold_rent) if li.cold_rent else ""
 
-    def _match(c):
-        t = c["t"]
-        if street not in t:
+    def _street_size(c):
+        if street not in re.sub(r"[\s,]+", " ", c["t"]):
             return False
-        if size_variants and not any(s in t for s in size_variants):
-            return False
-        if li.rooms and f"{li.rooms} zimmer" not in t:
-            return False
-        if price and price not in t:
-            return False
-        return True
+        return not size_variants or any(s in c["t"] for s in size_variants)
 
-    hits = [c for c in cards if _match(c)]
-    return hits[0]["href"] if len(hits) == 1 else ""
+    cand = [c for c in cards if _street_size(c)]
+    if len(cand) == 1:
+        return cand[0]["href"]
+    if len(cand) > 1 and price:                       # disambiguate by cold price
+        priced = [c for c in cand if price in c["t"]]
+        if len(priced) == 1:
+            return priced[0]["href"]
+    return ""
 
 
 def _attach_deep_links(page, listings: list, seen: set) -> None:
