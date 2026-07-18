@@ -66,6 +66,7 @@ import logging
 import multiprocessing as mp
 from dataclasses import dataclass, asdict
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -87,6 +88,21 @@ MAX_WARM_RENT         = int(os.environ.get("MAX_WARM_RENT", "1400"))
 WARM_COLD_FACTOR      = float(os.environ.get("WARM_COLD_FACTOR", "1.35"))
 POLL_INTERVAL_SECONDS = int(os.environ.get("POLL_INTERVAL_SECONDS", "240"))
 MAX_DETAIL_RETRIES    = int(os.environ.get("MAX_DETAIL_RETRIES", "3"))
+
+# Only actively poll during these local Berlin hours/days. The current sources
+# are government housing companies that don't publish on weekends or overnight,
+# so polling 24/7 is wasted traffic (and a needless bot-like fingerprint). Times
+# are Europe/Berlin and DST-aware — NOT the container's UTC system clock, which
+# is what datetime.now() would otherwise use. Set ACTIVE_HOURS_ENABLED=0 to poll
+# 24/7. This gate may be relaxed later if commercial listings are added, hence
+# the env overrides rather than hardcoding.
+ACTIVE_HOURS_ENABLED = os.environ.get("ACTIVE_HOURS_ENABLED", "1") == "1"
+ACTIVE_START_HOUR    = int(os.environ.get("ACTIVE_START_HOUR", "5"))    # inclusive
+ACTIVE_END_HOUR      = int(os.environ.get("ACTIVE_END_HOUR", "23"))     # exclusive
+# Comma-separated weekday numbers, Mon=0 .. Sun=6. Default Mon–Fri.
+ACTIVE_WEEKDAYS      = {int(d) for d in
+                        os.environ.get("ACTIVE_WEEKDAYS", "0,1,2,3,4").split(",")}
+BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
 # Hard wall-clock budget for one scrape cycle. The browser scrape runs in a child
 # process; if it exceeds this (e.g. a Playwright call hangs forever), the parent
@@ -189,6 +205,21 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("watch")
+
+
+def within_active_hours(now=None):
+    """True if we should be actively polling right now.
+
+    The active window is ACTIVE_WEEKDAYS and ACTIVE_START_HOUR <= hour <
+    ACTIVE_END_HOUR, evaluated in Europe/Berlin local time (DST-aware) — not the
+    container's UTC clock. `now` defaults to the current Berlin time; pass a
+    tz-aware datetime to test. If ACTIVE_HOURS_ENABLED is off, always True.
+    """
+    if not ACTIVE_HOURS_ENABLED:
+        return True
+    now = now or datetime.now(BERLIN_TZ)
+    return (now.weekday() in ACTIVE_WEEKDAYS
+            and ACTIVE_START_HOUR <= now.hour < ACTIVE_END_HOUR)
 
 
 # ----------------------------------------------------------------------
@@ -1421,9 +1452,22 @@ def main():
     daily_new = 0
     daily_matches = 0
     last_ping_date = None
+    last_quiet_log_date = None
     consecutive_failures = 0
 
     while True:
+        # Outside Berlin work hours the sources don't publish, so skip the scrape
+        # entirely (leaving failure/restart/status logic below untouched) and
+        # re-check on the normal cadence. Log the pause once per day, not per poll.
+        if not within_active_hours():
+            today_berlin = datetime.now(BERLIN_TZ).date()
+            if last_quiet_log_date != today_berlin:
+                log.info("Outside active hours (Berlin) — pausing polling until "
+                         "the next work-hours window.")
+                last_quiet_log_date = today_berlin
+            time.sleep(POLL_INTERVAL_SECONDS)
+            continue
+
         try:
             nl, nm, cycle_ok, detail = run_once(seen)
             daily_new += nl
