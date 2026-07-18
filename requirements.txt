@@ -5,3 +5,7 @@ requests>=2.31
 # Playwright whose Chromium build isn't in the image, breaking every launch. Bump
 # this and the Dockerfile FROM together, never one alone.
 playwright==1.61.0
+# Fallback IANA timezone database for zoneinfo.ZoneInfo("Europe/Berlin"), used to
+# gate polling to Berlin work hours. The Playwright jammy image normally ships
+# system tzdata, but this guarantees the lookup resolves regardless of base image.
+tzdata
