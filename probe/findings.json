@@ -1,0 +1,255 @@
+{
+  "gewobag": {
+    "samples": [
+      {
+        "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-1601-0582",
+        "captured_at": "2026-07-22T09:35:06Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/gewobag_1919825.png"
+      },
+      {
+        "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-1801-0654",
+        "captured_at": "2026-07-22T09:35:24Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/gewobag_4967352.png"
+      },
+      {
+        "url": "http://www.gewobag.de/",
+        "captured_at": "2026-07-22T09:36:12Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/gewobag_9226421.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  },
+  "degewo": {
+    "samples": [
+      {
+        "url": "https://www.degewo.de/de/properties/W1400-40684-0510-0702.html",
+        "captured_at": "2026-07-22T09:35:13Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/degewo_2971657.png"
+      },
+      {
+        "url": "https://www.degewo.de/de/properties/W1150-21705-0018-0210.html",
+        "captured_at": "2026-07-22T09:35:18Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/degewo_5057086.png"
+      },
+      {
+        "url": "https://www.degewo.de/de/properties/W1140-00667-0440-0705.html",
+        "captured_at": "2026-07-22T09:35:47Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/degewo_2211114.png"
+      },
+      {
+        "url": "http://www.degewo.de/",
+        "captured_at": "2026-07-22T09:36:00Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/degewo_9764199.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  },
+  "howoge": {
+    "samples": [
+      {
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-24063-184.html?t=ibw",
+        "captured_at": "2026-07-22T09:35:29Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/howoge_5922183.png"
+      },
+      {
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-14578-28.html?t=ibw",
+        "captured_at": "2026-07-22T09:35:52Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/howoge_7556195.png"
+      },
+      {
+        "url": "https://unternehmen.howoge.de/unternehmen/ueber-uns.html",
+        "captured_at": "2026-07-22T09:36:17Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/howoge_9945985.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  },
+  "wbm": {
+    "samples": [
+      {
+        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/96",
+        "captured_at": "2026-07-22T09:35:35Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/wbm_759606.png"
+      },
+      {
+        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/3/49",
+        "captured_at": "2026-07-22T09:35:39Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/wbm_1149919.png"
+      },
+      {
+        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/1/1",
+        "captured_at": "2026-07-22T09:35:43Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/wbm_9110196.png"
+      },
+      {
+        "url": "http://www.wbm.de/",
+        "captured_at": "2026-07-22T09:36:27Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/wbm_8435716.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  },
+  "berlinovo": {
+    "samples": [
+      {
+        "url": "https://www.berlinovo.de/de",
+        "captured_at": "2026-07-22T09:35:57Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/berlinovo_221763.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  },
+  "gesobau": {
+    "samples": [
+      {
+        "url": "http://www.gesobau.de/",
+        "captured_at": "2026-07-22T09:36:05Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": null,
+        "screenshot": "screenshots/gesobau_6333912.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  },
+  "stadtundland": {
+    "samples": [
+      {
+        "url": "http://www.stadtundland.de/",
+        "captured_at": "2026-07-22T09:36:23Z",
+        "expected_plz": "",
+        "expected_size": null,
+        "status": "expired",
+        "http_status": 200,
+        "plz_echoed": false,
+        "size_echoed": false,
+        "expired_phrase": "404",
+        "screenshot": "screenshots/stadtundland_2711084.png"
+      }
+    ],
+    "target_current": 2,
+    "current_count": 0,
+    "satisfied": false
+  }
+}
