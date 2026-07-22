@@ -24,6 +24,7 @@ Usage:
                                        [--target-current N=2]
                                        [--refresh all|c1,c2] [--headful]
 """
+import os
 import re
 import sys
 import json
@@ -447,9 +448,25 @@ def main():
     print(f"[*] this run chases: {', '.join(todo)}", file=sys.stderr)
 
     from playwright.sync_api import sync_playwright
+    # Use a pre-installed Chromium when present (some environments ship a browser
+    # build that doesn't match the pinned Playwright's auto-download). Falls back
+    # to Playwright's bundled browser (e.g. inside the Docker image) when unset.
+    exe = os.environ.get("PROBE_CHROMIUM_PATH")
+    if not exe and os.path.exists("/opt/pw-browsers/chromium"):
+        exe = "/opt/pw-browsers/chromium"
+    launch_kwargs = {"headless": not args.headful, "timeout": 60000}
+    if exe:
+        launch_kwargs["executable_path"] = exe
+    # Chromium doesn't honour HTTPS_PROXY from the environment; pass it explicitly
+    # so the scout works where outbound web is reached through a proxy. Unset in a
+    # direct-network deploy (e.g. Railway), where no proxy is passed.
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    context_kwargs = {"user_agent": UA}
+    if proxy:
+        context_kwargs["proxy"] = {"server": proxy}
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=not args.headful, timeout=60000)
-        context = browser.new_context(user_agent=UA)
+        browser = p.chromium.launch(**launch_kwargs)
+        context = browser.new_context(**context_kwargs)
         try:
             finder = context.new_page()
             finder.set_default_timeout(9000)
