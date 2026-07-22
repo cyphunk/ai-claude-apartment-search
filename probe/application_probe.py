@@ -64,12 +64,21 @@ _EXPIRED_PHRASES = [
     "keine ergebnisse", "zurzeit keine",
 ]
 
-_CONSENT_LABELS = ["Alle akzeptieren", "Alle Cookies akzeptieren", "Akzeptieren",
-                   "Zustimmen", "Einverstanden", "Accept all", "Accept", "OK"]
+# The seven company sites use assorted CMPs (Usercentrics — often in a shadow
+# DOM, OneTrust, Cookiebot, custom). Playwright's get_by_role pierces open shadow
+# roots, so a broad label list plus the well-known button IDs covers them.
+_CONSENT_LABELS = ["Alle akzeptieren", "Alle Cookies akzeptieren", "Alle Cookies annehmen",
+                   "Alles akzeptieren", "Akzeptieren", "Alle zulassen", "Zulassen",
+                   "Zustimmen", "Einverstanden", "Ich stimme zu", "Verstanden",
+                   "Accept all", "Accept All Cookies", "Accept", "Allow all", "OK"]
 _CONSENT_SELECTORS = [
-    "[data-testid='uc-accept-all-button']",
-    "button#onetrust-accept-btn-handler",
+    "[data-testid='uc-accept-all-button']",           # Usercentrics (Playwright CSS pierces open shadow DOM)
+    "button#onetrust-accept-btn-handler",             # OneTrust
+    "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",   # Cookiebot
+    "#CybotCookiebotDialogBodyButtonAccept",          # Cookiebot (simple)
     "[aria-label*='akzeptier' i]",
+    "[id*='accept-all' i]",
+    "[class*='accept-all' i]",
 ]
 
 # JS that reads every form on the current page plus the page-level signals.
@@ -234,28 +243,39 @@ def _is_satisfied(entry: dict, target: int) -> bool:
 # scraping
 # ---------------------------------------------------------------------------
 def harvest_candidates(page) -> list:
-    """From the finder, return [{company, href, plz, size, card_text}] using the
-    card each company link sits in (nearest ancestor whose text has € and m²)."""
+    """From the finder, return [{company, href, plz, size}] for company DETAIL
+    links, reading each listing's PLZ + m² size from the card the link sits in.
+
+    The card is located by climbing to the nearest ancestor whose text contains
+    BOTH a Berlin PLZ and an m² size. We deliberately do NOT gate on the € symbol
+    (the first run's bug): the finder renders the currency mark via CSS, so it's
+    absent from innerText and gating on it matched no ancestor — leaving every
+    listing with empty tokens and thus wrongly classified `expired`. PLZ and size
+    are real text content, so they are reliable. Footer/homepage links are
+    excluded by the detail-URL filter; a candidate with no reliable PLZ+size is
+    skipped (we'd rather miss it than guess it current)."""
     raw = page.evaluate(r"""
       () => {
         const host=/howoge|degewo|gesobau|gewobag|stadtundland|wbm|berlinovo/i;
+        const det=/detail|mietangebote|properties|immo_ref|wohnung-id|t=ibw|expose|angebot/i;
+        const plzRe=/\b1[0-4]\d{3}\b/;
+        const sizeRe=/\d{1,3}(?:[.,]\d{1,2})?\s*m(?:²|2)\b/i;
         const out=[]; const seen=new Set();
         for (const a of document.querySelectorAll('a[href]')) {
-          const h=a.href||''; if(!host.test(h)||seen.has(h)) continue;
+          const h=a.href||'';
+          if(!host.test(h)||!det.test(h)||seen.has(h)) continue;
           seen.add(h);
-          let el=a, card=null;
-          for (let i=0;i<10 && el;i++,el=el.parentElement){
+          let el=a, card='';
+          for (let i=0;i<12 && el;i++, el=el.parentElement){
             const t=el.innerText||'';
-            if(/€/.test(t) && /m²|m2/i.test(t)){card=el;break;}
+            if(plzRe.test(t) && sizeRe.test(t)){ card=t; break; }
           }
-          out.push({href:h, text:(a.innerText||'').trim().slice(0,80),
-                    card:(card?card.innerText:'').trim().slice(0,400)});
+          out.push({href:h, card:card.trim().slice(0,600)});
         }
         return out;
       }
     """)
-    cands = []
-    seen = set()
+    cands, seen = [], set()
     for r in raw:
         href = r.get("href", "")
         comp = _company_of(href)
@@ -263,16 +283,10 @@ def harvest_candidates(page) -> list:
             continue
         seen.add(href)
         card = r.get("card", "")
-        cands.append({
-            "company": comp,
-            "href": href,
-            "plz": _first_plz(card),
-            "size": _first_size(card),
-            "card_text": card,
-            "is_detail": bool(_DETAIL_RE.search(href)),
-        })
-    # detail-looking links first, otherwise page order
-    cands.sort(key=lambda x: (not x["is_detail"],))
+        plz, size = _first_plz(card), _first_size(card)
+        if not plz or size is None:
+            continue  # no reliable finder tokens -> can't verify -> skip (safe)
+        cands.append({"company": comp, "href": href, "plz": plz, "size": size})
     return cands
 
 
