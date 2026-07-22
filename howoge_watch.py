@@ -1430,6 +1430,11 @@ def main():
         return
 
     debug = "--debug" in sys.argv
+    # The container restarts often (redeploys, self-restart on failures), so the
+    # per-boot "Started" Telegram ping is noise by default. Send it only when
+    # explicitly asked with --ping-on-start. The daily status ping and the
+    # failure/restart alerts are unaffected.
+    ping_on_start = "--ping-on-start" in sys.argv
     seen = load_seen()
     if not seen:
         log.warning("Seen-state is empty — all current listings will be treated as new. "
@@ -1443,7 +1448,8 @@ def main():
              POLL_INTERVAL_SECONDS, POLL_JITTER_SECONDS, CYCLE_TIMEOUT_SECONDS,
              BROWSER_LAUNCH_TIMEOUT_MS, MAX_DETAIL_RETRIES, ALERT_ON_UNVERIFIED,
              MAX_CONSECUTIVE_FAILURES)
-    send_status_ping(seen, 0, 0, "Started")
+    if ping_on_start:
+        send_status_ping(seen, 0, 0, "Started")
 
     if debug:
         run_once(seen, debug=True)

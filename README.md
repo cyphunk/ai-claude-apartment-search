@@ -63,6 +63,9 @@ That is it. New matches arrive as Telegram messages with the listing link.
 
 - Change price ceiling, postal codes, or poll interval at the top of
   `howoge_watch.py`, commit, push. Railway redeploys automatically.
+- The startup "Started" Telegram ping is **off by default** (the container
+  restarts often, so it was just noise). Pass `--ping-on-start` to re-enable it;
+  the daily status ping and failure alerts are unaffected.
 - If a run reports 0 listings while a site clearly shows some, the page markup
   likely changed. Run with `python3 howoge_watch.py --debug`, which writes
   `debug_howoge.html`, `debug_inberlin.html`, and `debug_inberlin_api.json`.
