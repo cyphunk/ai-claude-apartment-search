@@ -305,29 +305,34 @@ def listings_from_payloads(payloads: list) -> list:
 
 
 def _read_rendered_cards(page) -> list:
-    """The finder renders ~10 apartment cards, each carrying the owning company's
-    real detail link. Return [{href, t}] (t = normalised lowercase card text) for
-    those cards; company detail links only. Copied from the watcher."""
+    """Return every finder link whose host is one of the seven companies, each
+    tagged `detail` (True if the URL looks like a listing detail page) plus, for
+    detail links, the text of the card it sits in (used for marker matching).
+    Non-detail links (footer/homepage) are returned too, purely so the report's
+    per-company diagnostics can tell 'no listing rendered' from 'URL pattern not
+    recognised'. Extended from the watcher's card reader."""
     try:
-        cards = page.evaluate(
+        links = page.evaluate(
             "() => { const host=/howoge|degewo|gesobau|gewobag|stadtundland|wbm|berlinovo/i;"
             " const det=/detail|mietangebote|properties|immo_ref|wohnung-id|t=ibw/i;"
             " const out=[]; const seen=new Set();"
             " for (const a of document.querySelectorAll('a[href]')) {"
-            "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
+            "   const h=a.href||''; if(!host.test(h)||seen.has(h)) continue;"
             "   seen.add(h);"
-            "   let el=a, card=null;"
-            "   for (let i=0;i<10 && el;i++,el=el.parentElement){"
-            "     const t=el.innerText||'';"
-            "     if(/€/.test(t) && /m²|m2/i.test(t)){card=el;break;} }"
-            "   if(!card) card=a.closest('[wire\\\\:id]');"
-            "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
+            "   const detail=det.test(h); let txt='';"
+            "   if(detail){ let el=a, card=null;"
+            "     for (let i=0;i<10 && el;i++,el=el.parentElement){"
+            "       const t=el.innerText||'';"
+            "       if(/€/.test(t) && /m²|m2/i.test(t)){card=el;break;} }"
+            "     if(!card) card=a.closest('[wire\\\\:id]');"
+            "     txt=((card?card.innerText:'')||'').replace(/\\s+/g,' '); }"
+            "   out.push({href:h, detail:detail, text:txt}); }"
             " return out; }") or []
     except Exception:
         return []
-    return [{"href": c["href"],
+    return [{"href": c["href"], "detail": bool(c.get("detail")),
              "t": re.sub(r"\s+", " ", (c.get("text") or "")).strip().lower()}
-            for c in cards]
+            for c in links]
 
 
 def _goto_next_page(page) -> bool:
@@ -360,19 +365,22 @@ def _goto_next_page(page) -> bool:
     return False
 
 
-def _collect_cards(finder, max_pages: int) -> list:
-    """Read rendered cards across up to `max_pages` of the finder list, deduped by
-    href. Falls back to scrolling when no pagination control is found (covers
-    infinite-scroll layouts); stops early when a page yields no new cards."""
-    all_cards = {}
+def _collect_cards(finder, max_pages: int):
+    """Walk up to `max_pages` of the finder list and return
+    (detail_cards, stats). `detail_cards` feed marker matching; `stats` powers the
+    report's Run summary: pages walked, totals, and per-company
+    {links, detail_cards}. Falls back to scrolling when no pager is found; stops
+    early when a page yields no new links."""
+    all_links = {}  # href -> {href, detail, t}
 
     def _absorb():
         for c in _read_rendered_cards(finder):
-            all_cards.setdefault(c["href"], c)
+            all_links.setdefault(c["href"], c)
 
     _absorb()
+    pages = 1
     for _ in range(max(0, max_pages - 1)):
-        before = len(all_cards)
+        before = len(all_links)
         if not _goto_next_page(finder):
             try:
                 finder.mouse.wheel(0, 4000)  # maybe it's infinite-scroll, not pages
@@ -384,9 +392,24 @@ def _collect_cards(finder, max_pages: int) -> list:
         except Exception:
             pass
         _absorb()
-        if len(all_cards) == before:
-            break  # neither pagination nor scroll produced new cards
-    return list(all_cards.values())
+        if len(all_links) == before:
+            break  # neither pagination nor scroll produced new links
+        pages += 1
+
+    links = list(all_links.values())
+    detail_cards = [c for c in links if c["detail"]]
+    per_company = {}
+    for c in links:
+        comp = _company_of(c["href"])
+        if not comp:
+            continue
+        d = per_company.setdefault(comp, {"links": 0, "detail_cards": 0, "matched": 0})
+        d["links"] += 1
+        if c["detail"]:
+            d["detail_cards"] += 1
+    stats = {"pages": pages, "total_links": len(links),
+             "total_cards": len(detail_cards), "per_company": per_company}
+    return detail_cards, stats
 
 
 def _match_unique_card(mk: dict, cards: list):
@@ -477,7 +500,11 @@ def classify_and_map(context, cand: dict) -> dict:
     page = context.new_page()
     page.set_default_timeout(9000)
     try:
-        resp = page.goto(url, wait_until="domcontentloaded", timeout=35000)
+        # Navigate with the inberlin finder as Referer: the finder's company links
+        # carry ?t=ibw (an inberlin referral) and some companies (howoge 404s on
+        # direct hits) may only serve the real exposé to inberlin-referred requests.
+        # Harmless for the companies that already work. Still GET-only.
+        resp = page.goto(url, wait_until="domcontentloaded", timeout=35000, referer=FINDER)
         sample["http_status"] = resp.status if resp else None
         _dismiss_consent(page)
         page.wait_for_timeout(1500)
@@ -544,12 +571,57 @@ def classify_and_map(context, cand: dict) -> dict:
     return sample
 
 
+# Form classification for picking the real application form (not a cookie-consent
+# or search form, which can be bigger than the application form on the page).
+_CONSENT_FIELD_RE = re.compile(
+    r"essenziell|statistik|marketing|externe medien|funktional|einwilligung|cookie", re.I)
+_CONSENT_FORM_RE = re.compile(r"usercentrics|cookiebot|onetrust|borlabs|consent|cookie", re.I)
+_SEARCH_FIELD_RE = re.compile(
+    r"max\.?\s*preis|min\.?\s*(?:zimmer|fl[aä]che)|umkreis|\bwo\?|plz oder ort|"
+    r"zimmer von|seniorenfreundlich", re.I)
+_SEARCH_FORM_RE = re.compile(r"such|search", re.I)
+_APPLY_FIELD_RE = re.compile(
+    r"\bname\b|vorname|nachname|e-?mail|telefon|anrede|nachricht|message|bewerb|"
+    r"\bwbs\b|geburt|einkommen", re.I)
+_APPLY_FORM_RE = re.compile(
+    r"inquiry|anfrage|bewerb|kontakt|powermail|formframework|form_apartment", re.I)
+
+
+def _form_blob(form: dict) -> str:
+    labs = " ".join((f.get("label") or "") + " " + (f.get("name") or "")
+                    for f in (form.get("fields") or []))
+    return (labs + " " + (form.get("action") or "")).lower()
+
+
+def _pick_application_form(forms: list):
+    """Pick the form most likely to be the application/contact form. Cookie-consent
+    and search/filter forms are excluded outright (they can out-field the real
+    form); the rest are scored by application signals. Returns None if nothing
+    qualifies (so we report 'no application form' instead of a bogus one)."""
+    best, best_score = None, -1.0
+    for f in forms:
+        blob = _form_blob(f)
+        action = (f.get("action") or "").lower()
+        if _CONSENT_FORM_RE.search(action) or _CONSENT_FIELD_RE.search(blob):
+            continue
+        if _SEARCH_FORM_RE.search(action) or _SEARCH_FIELD_RE.search(blob):
+            continue
+        score = 4.0 * len(_APPLY_FIELD_RE.findall(blob))
+        if _APPLY_FORM_RE.search(blob):
+            score += 6
+        if (f.get("method") or "").lower() == "post":
+            score += 2
+        score += min(f.get("field_count", 0), 20) * 0.1  # mild field-count tiebreak
+        if score > best_score:
+            best, best_score = f, score
+    return best
+
+
 def _structure_from_sample(sample: dict) -> dict:
     """Distil the canonical application structure from a current sample."""
     pages = [sample.get("exposé", {}), sample.get("apply_page", {})]
     forms = [f for pg in pages for f in (pg.get("forms") or [])]
-    # the "richest" form (most fields) is the likely application form
-    main = max(forms, key=lambda f: f.get("field_count", 0), default=None)
+    main = _pick_application_form(forms)
     return {
         "apply_entry": (sample.get("followed_entry") or {}).get("href")
                        or (sample.get("followed_entry") or {}).get("text"),
@@ -560,6 +632,8 @@ def _structure_from_sample(sample: dict) -> dict:
         "fields": (main or {}).get("fields", []),
         "submit_target": {"action": (main or {}).get("action", ""),
                           "method": (main or {}).get("method", "")} if main else None,
+        "form_note": None if main else
+                     "no application form identified (only consent/search forms present)",
         "form_count": len(forms),
     }
 
@@ -570,6 +644,27 @@ def _structure_from_sample(sample: dict) -> dict:
 def write_report(findings: dict, companies: list, target: int):
     lines = ["# Application-form scout report", "",
              f"_Generated {_now()} — READ-ONLY, no submissions._", ""]
+
+    # Run summary (from findings['_run']) so a run is diagnosable from the report
+    # alone. Per company: company links / detail cards / matched candidates —
+    # links>0 & detail=0 means the detail-URL pattern isn't recognised; links=0
+    # means no live listing was rendered.
+    run = findings.get("_run") or {}
+    if run:
+        lines += [
+            "## Run summary",
+            f"- finder: {run.get('total_markers','?')} Livewire listings; "
+            f"{run.get('total_cards','?')} detail cards / {run.get('total_links','?')} "
+            f"company links; {run.get('pages','?')} of {run.get('max_pages','?')} page(s) walked",
+            "- per company — company links / detail cards / matched candidates:",
+        ]
+        pc = run.get("per_company") or {}
+        for comp in companies:
+            d = pc.get(comp) or {}
+            lines.append(f"  - {comp}: {d.get('links', 0)} / "
+                         f"{d.get('detail_cards', 0)} / {d.get('matched', 0)}")
+        lines.append("")
+
     still_needed = []
     for comp in companies:
         entry = findings.get(comp, {})
@@ -586,14 +681,18 @@ def write_report(findings: dict, companies: list, target: int):
             f"(target {target} current)",
         ]
         if st:
-            lines += [
+            lines.append(
                 f"- login required: {st.get('requires_login')}  |  "
-                f"captcha: {st.get('captcha')}  |  WBS asked: {st.get('wbs_required')}",
-                f"- fields: {len(st.get('fields') or [])}  |  "
-                f"uploads: {len(st.get('file_uploads') or [])}  |  "
-                f"submit: {(st.get('submit_target') or {}).get('method','?')} "
-                f"{(st.get('submit_target') or {}).get('action','')}",
-            ]
+                f"captcha: {st.get('captcha')}  |  WBS asked: {st.get('wbs_required')}")
+            if st.get("submit_target"):
+                lines.append(
+                    f"- fields: {len(st.get('fields') or [])}  |  "
+                    f"uploads: {len(st.get('file_uploads') or [])}  |  "
+                    f"submit: {(st.get('submit_target') or {}).get('method','?')} "
+                    f"{(st.get('submit_target') or {}).get('action','')}")
+            else:
+                lines.append(f"- ⚠ {st.get('form_note') or 'no application form identified'} "
+                             f"(forms on page: {st.get('form_count', 0)})")
         # Per-listing detail (current AND expired) so problems are examinable by
         # hand: the PLZ+size FROM THE INDEX (authoritative), whether each was still
         # found on the exposé, and the initial link vs. the URL we landed on (a
@@ -715,13 +814,24 @@ def main():
                 finder.wait_for_timeout(1500)
             except Exception:
                 pass
-            cards = _collect_cards(finder, args.max_pages)
+            cards, run_stats = _collect_cards(finder, args.max_pages)
             markers = listings_from_payloads(api_payloads)
             cands = harvest_candidates(cards, markers)
             finder.close()
-            print(f"[*] {len(markers)} Livewire listings, {len(cards)} rendered "
-                  f"cards over up to {args.max_pages} page(s) -> {len(cands)} "
-                  f"matched candidates (with index PLZ+size)", file=sys.stderr)
+            # Fold matched-candidate counts into the per-company stats and persist
+            # the whole run summary so report.md is self-diagnosing (no stderr log
+            # needed). '_run' is a reserved key; company iteration never touches it.
+            for cand in cands:
+                pc = run_stats["per_company"].setdefault(
+                    cand["company"], {"links": 0, "detail_cards": 0, "matched": 0})
+                pc["matched"] += 1
+            run_stats["generated"] = _now()
+            run_stats["total_markers"] = len(markers)
+            run_stats["max_pages"] = args.max_pages
+            findings["_run"] = run_stats
+            print(f"[*] {len(markers)} Livewire listings, {len(cards)} detail cards "
+                  f"over {run_stats['pages']} page(s) -> {len(cands)} matched "
+                  f"candidates (details in report.md Run summary)", file=sys.stderr)
 
             need = {c: target - sum(1 for s in findings.get(c, {}).get("samples", [])
                                     if s.get("status") == "current")

@@ -2,5 +2,7 @@ __pycache__/
 *.pyc
 .env
 venv
+*.orig
+*.rej
 #seen_listings.json
 debug_howoge.html
