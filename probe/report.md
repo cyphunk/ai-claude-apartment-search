@@ -1,6 +1,6 @@
 # Application-form scout report
 
-_Generated 2026-07-23T11:22:04Z — READ-ONLY, no submissions._
+_Generated 2026-07-23T11:31:24Z — READ-ONLY, no submissions._
 
 ## howoge — ⏳ needs a current listing
 - samples: 0 current, 6 expired  (target 2 current)
@@ -25,7 +25,7 @@ _Generated 2026-07-23T11:22:04Z — READ-ONLY, no submissions._
 
 ## degewo — ✅ satisfied
 - samples: 2 current, 0 expired  (target 2 current)
-- login required: False  |  captcha: None  |  WBS asked: False
+- login required: False  |  captcha: friendlycaptcha  |  WBS asked: False
 - fields: 5  |  uploads: 0  |  submit: post https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1?tx_form_formframework%5Baction%5D=perform&tx_form_formframework%5Bcontroller%5D=FormFrontend&cHash=15f2e9d9392b813e400da6a185ce8375#form_apartment_inquiry-2462
 - **[current]** PLZ 12689 · 34.36 m² (from index)  — on exposé: plz✓ size✓
     - initial: https://www.degewo.de/de/properties/W1400-40684-0510-0702.html
@@ -52,18 +52,15 @@ _Generated 2026-07-23T11:22:04Z — READ-ONLY, no submissions._
 - samples: 0 current, 0 expired  (target 2 current)
 
 ## wbm — ✅ satisfied
-- samples: 2 current, 1 expired  (target 2 current)
+- samples: 2 current, 0 expired  (target 2 current)
 - login required: False  |  captcha: None  |  WBS asked: True
 - fields: 16  |  uploads: 0  |  submit: post https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_powermail_pi1%5Baction%5D=create&tx_powermail_pi1%5Bcontroller%5D=Form&cHash=2280b9865be8789b7cf284e2d8a42bc6#c722
-- **[expired]** PLZ 13055 · 84.9 m² (from index)  — on exposé: plz✗ size✗
+- **[current]** PLZ 13055 · 84.9 m² (from index)  — on exposé: plz✓ size✓
     - initial: https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/102
-    - final:   
+    - final:   https://www.wbm.de/wohnungen-berlin/angebote/details/stilvolle-3-zimmer-wohnung-mit-loggia-und-gaeste-wc  ← redirected
 - **[current]** PLZ 13055 · 97.74 m² (from index)  — on exposé: plz✓ size✓
     - initial: https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/113
     - final:   https://www.wbm.de/wohnungen-berlin/angebote/details/exklusive-dachgeschosswohnung-mit-umlaufender-terrasse  ← redirected
-- **[current]** PLZ 13055 · 76.55 m² (from index)  — on exposé: plz✓ size✓
-    - initial: https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/6/127
-    - final:   https://www.wbm.de/wohnungen-berlin/angebote/details/ideal-fuer-paare-u-kleine-familien-moderne-3-zimmer-wohnung-mit-balkon  ← redirected
 
 ## berlinovo — ⏳ needs a current listing
 - samples: 1 current, 0 expired  (target 2 current)

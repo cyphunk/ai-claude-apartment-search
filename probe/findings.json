@@ -5,7 +5,7 @@
         "url": "https://www.degewo.de/de/properties/W1400-40684-0510-0702.html",
         "initial_url": "https://www.degewo.de/de/properties/W1400-40684-0510-0702.html",
         "final_url": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1",
-        "captured_at": "2026-07-23T11:20:47Z",
+        "captured_at": "2026-07-23T11:30:09Z",
         "finder_plz": "12689",
         "finder_size": 34.36,
         "status": "current",
@@ -13,7 +13,7 @@
         "plz_found_on_expose": true,
         "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/degewo_5527267.png",
+        "screenshot": "screenshots/degewo_6270067.png",
         "exposé": {
           "title": "1 Zimmer über den Dächern Berlins: degewo",
           "url": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1",
@@ -111,7 +111,7 @@
               ]
             }
           ],
-          "captcha": null,
+          "captcha": "friendlycaptcha",
           "requires_login": false,
           "file_uploads": [],
           "wbs_mentioned": false,
@@ -266,7 +266,7 @@
         "url": "https://www.degewo.de/de/properties/W1400-40412-0500-0202.html",
         "initial_url": "https://www.degewo.de/de/properties/W1400-40412-0500-0202.html",
         "final_url": "https://www.degewo.de/immosuche/details/singlewohnung-fuer-berufseinsteiger-im-norden-von-marzahn",
-        "captured_at": "2026-07-23T11:20:55Z",
+        "captured_at": "2026-07-23T11:30:18Z",
         "finder_plz": "12689",
         "finder_size": 32.6,
         "status": "current",
@@ -274,7 +274,7 @@
         "plz_found_on_expose": true,
         "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/degewo_6575836.png",
+        "screenshot": "screenshots/degewo_7890026.png",
         "exposé": {
           "title": "Singlewohnung für Berufseinsteiger im Norden von Marzahn: degewo",
           "url": "https://www.degewo.de/immosuche/details/singlewohnung-fuer-berufseinsteiger-im-norden-von-marzahn",
@@ -372,7 +372,7 @@
               ]
             }
           ],
-          "captcha": null,
+          "captcha": "friendlycaptcha",
           "requires_login": false,
           "file_uploads": [],
           "wbs_mentioned": false,
@@ -528,7 +528,7 @@
     "structure": {
       "apply_entry": "https://www.degewo.de/mieterservice/kontakt",
       "requires_login": false,
-      "captcha": null,
+      "captcha": "friendlycaptcha",
       "wbs_required": false,
       "file_uploads": [],
       "fields": [
@@ -588,7 +588,7 @@
         "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307",
         "initial_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307",
         "final_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/",
-        "captured_at": "2026-07-23T11:21:03Z",
+        "captured_at": "2026-07-23T11:30:26Z",
         "finder_plz": "13627",
         "finder_size": 66.22,
         "status": "current",
@@ -596,7 +596,7 @@
         "plz_found_on_expose": true,
         "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/gewobag_232976.png",
+        "screenshot": "screenshots/gewobag_5299709.png",
         "exposé": {
           "title": "Helles Bad mit Dusche - Gewobag",
           "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/",
@@ -843,7 +843,7 @@
         "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610",
         "initial_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610",
         "final_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610/",
-        "captured_at": "2026-07-23T11:21:49Z",
+        "captured_at": "2026-07-23T11:31:09Z",
         "finder_plz": "13583",
         "finder_size": 77.73,
         "status": "current",
@@ -851,7 +851,7 @@
         "plz_found_on_expose": true,
         "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/gewobag_9051544.png",
+        "screenshot": "screenshots/gewobag_4961503.png",
         "exposé": {
           "title": "Familienwohnung ab sofort verfügbar - Gewobag",
           "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610/",
@@ -1111,7 +1111,7 @@
         "url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
         "initial_url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
         "final_url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
-        "captured_at": "2026-07-23T11:21:11Z",
+        "captured_at": "2026-07-23T11:30:35Z",
         "finder_plz": "12629",
         "finder_size": 69.75,
         "status": "current",
@@ -1119,7 +1119,7 @@
         "plz_found_on_expose": true,
         "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/berlinovo_4505819.png",
+        "screenshot": "screenshots/berlinovo_1427534.png",
         "exposé": {
           "title": "Schöne Familienwohnung mit Balkon am Kaufpark Eiche. | berlinovo",
           "url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
@@ -1353,7 +1353,7 @@
         "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12156-17.html?t=ibw",
         "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12156-17.html?t=ibw",
         "final_url": "https://www.howoge.de/404",
-        "captured_at": "2026-07-23T11:21:17Z",
+        "captured_at": "2026-07-23T11:30:41Z",
         "finder_plz": "13051",
         "finder_size": 83.59,
         "status": "expired",
@@ -1361,13 +1361,13 @@
         "plz_found_on_expose": false,
         "size_found_on_expose": false,
         "expired_phrase": "nicht mehr verfügbar",
-        "screenshot": "screenshots/howoge_4657081.png"
+        "screenshot": "screenshots/howoge_6054576.png"
       },
       {
         "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20549-145.html?t=ibw",
         "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20549-145.html?t=ibw",
         "final_url": "https://www.howoge.de/404",
-        "captured_at": "2026-07-23T11:21:21Z",
+        "captured_at": "2026-07-23T11:30:45Z",
         "finder_plz": "10319",
         "finder_size": 57.31,
         "status": "expired",
@@ -1375,13 +1375,13 @@
         "plz_found_on_expose": false,
         "size_found_on_expose": false,
         "expired_phrase": "nicht mehr verfügbar",
-        "screenshot": "screenshots/howoge_1764075.png"
+        "screenshot": "screenshots/howoge_858904.png"
       },
       {
         "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12344-35.html?t=ibw",
         "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12344-35.html?t=ibw",
         "final_url": "https://www.howoge.de/404",
-        "captured_at": "2026-07-23T11:21:24Z",
+        "captured_at": "2026-07-23T11:30:49Z",
         "finder_plz": "13051",
         "finder_size": 63.63,
         "status": "expired",
@@ -1389,13 +1389,13 @@
         "plz_found_on_expose": false,
         "size_found_on_expose": false,
         "expired_phrase": "nicht mehr verfügbar",
-        "screenshot": "screenshots/howoge_5267625.png"
+        "screenshot": "screenshots/howoge_9378200.png"
       },
       {
         "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20584-108.html?t=ibw",
         "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20584-108.html?t=ibw",
         "final_url": "https://www.howoge.de/404",
-        "captured_at": "2026-07-23T11:21:27Z",
+        "captured_at": "2026-07-23T11:30:52Z",
         "finder_plz": "10315",
         "finder_size": 53.06,
         "status": "expired",
@@ -1403,13 +1403,13 @@
         "plz_found_on_expose": false,
         "size_found_on_expose": false,
         "expired_phrase": "nicht mehr verfügbar",
-        "screenshot": "screenshots/howoge_5695451.png"
+        "screenshot": "screenshots/howoge_1700544.png"
       },
       {
         "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-24705-35.html?t=ibw",
         "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-24705-35.html?t=ibw",
         "final_url": "https://www.howoge.de/404",
-        "captured_at": "2026-07-23T11:21:58Z",
+        "captured_at": "2026-07-23T11:31:17Z",
         "finder_plz": "10365",
         "finder_size": 49.61,
         "status": "expired",
@@ -1417,13 +1417,13 @@
         "plz_found_on_expose": false,
         "size_found_on_expose": false,
         "expired_phrase": "nicht mehr verfügbar",
-        "screenshot": "screenshots/howoge_3849702.png"
+        "screenshot": "screenshots/howoge_4667095.png"
       },
       {
         "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20515-58.html?t=ibw",
         "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20515-58.html?t=ibw",
         "final_url": "https://www.howoge.de/404",
-        "captured_at": "2026-07-23T11:22:01Z",
+        "captured_at": "2026-07-23T11:31:20Z",
         "finder_plz": "10319",
         "finder_size": 61.5,
         "status": "expired",
@@ -1431,7 +1431,7 @@
         "plz_found_on_expose": false,
         "size_found_on_expose": false,
         "expired_phrase": "nicht mehr verfügbar",
-        "screenshot": "screenshots/howoge_7004327.png"
+        "screenshot": "screenshots/howoge_1521670.png"
       }
     ],
     "target_current": 2,
@@ -1443,19 +1443,244 @@
       {
         "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/102",
         "initial_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/102",
-        "final_url": null,
-        "captured_at": "2026-07-23T11:21:30Z",
+        "final_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/stilvolle-3-zimmer-wohnung-mit-loggia-und-gaeste-wc",
+        "captured_at": "2026-07-23T11:30:55Z",
         "finder_plz": "13055",
         "finder_size": 84.9,
-        "status": "expired",
+        "status": "current",
         "http_status": 200,
-        "error": "TargetClosedError('Page.wait_for_timeout: Target page, context or browser has been closed')"
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
+        "expired_phrase": null,
+        "screenshot": "screenshots/wbm_3007136.png",
+        "exposé": {
+          "title": "Details - Wohnungsbaugesellschaft Berlin-Mitte mbH",
+          "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/stilvolle-3-zimmer-wohnung-mit-loggia-und-gaeste-wc",
+          "forms": [
+            {
+              "action": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_powermail_pi1%5Baction%5D=create&tx_powermail_pi1%5Bcontroller%5D=Form&cHash=2280b9865be8789b7cf284e2d8a42bc6#c722",
+              "method": "post",
+              "field_count": 16,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
+                  "required": false,
+                  "label": "ja",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
+                  "required": false,
+                  "label": "nein",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "date",
+                  "name": "tx_powermail_pi1[field][wbsgueltigbis]",
+                  "required": false,
+                  "label": "WBS gültig bis",
+                  "options": null
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][wbszimmeranzahl]",
+                  "required": false,
+                  "label": "WBS Zimmeranzahl",
+                  "options": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7"
+                  ]
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][einkommensgrenzenacheinkommensbescheinigung9]",
+                  "required": false,
+                  "label": "Einkommensgrenze nach Einkommensbescheinigung § 9",
+                  "options": [
+                    "WBS 100",
+                    "WBS 140",
+                    "WBS 160",
+                    "WBS 180",
+                    "WBS 220"
+                  ]
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "tx_powermail_pi1[field][wbsmitbesonderemwohnbedarf][]",
+                  "required": false,
+                  "label": "ja",
+                  "options": null
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][anrede]",
+                  "required": false,
+                  "label": "Anrede",
+                  "options": [
+                    "Frau",
+                    "Herr",
+                    "Offen"
+                  ]
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][name]",
+                  "required": true,
+                  "label": "Name*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][vorname]",
+                  "required": true,
+                  "label": "Vorname*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][strasse]",
+                  "required": false,
+                  "label": "Strasse",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][plz]",
+                  "required": false,
+                  "label": "PLZ",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][ort]",
+                  "required": false,
+                  "label": "Ort",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][e_mail]",
+                  "required": true,
+                  "label": "E-Mail*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][telefon]",
+                  "required": false,
+                  "label": "Telefon",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "tx_powermail_pi1[field][datenschutzhinweis][]",
+                  "required": true,
+                  "label": "Hiermit bestätige ich, dass ich die Hinweise zum Datenschutz gelesen habe. Ich b",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][__hp]",
+                  "required": false,
+                  "label": "Bitte dieses Feld NICHT ausfüllen!",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": true,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.wbm.de/kontakt/"
+            },
+            {
+              "tag": "a",
+              "text": "Kundenportal Meine WBM",
+              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
+            },
+            {
+              "tag": "a",
+              "text": "",
+              "href": "https://www.wbm.de/presse/drehanfragen/"
+            },
+            {
+              "tag": "button",
+              "text": "Anfrage absenden",
+              "href": ""
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakt",
+          "href": "https://www.wbm.de/kontakt/"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakt - Wohnungsbaugesellschaft Berlin-Mitte mbH",
+          "url": "https://www.wbm.de/kontakt/",
+          "forms": [],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.wbm.de/kontakt/"
+            },
+            {
+              "tag": "a",
+              "text": "Kundenportal Meine WBM",
+              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
+            },
+            {
+              "tag": "a",
+              "text": "",
+              "href": "https://www.wbm.de/presse/drehanfragen/"
+            },
+            {
+              "tag": "a",
+              "text": "hier",
+              "href": "https://www.wbm.de/wohnungen-berlin/interesse-anmelden/"
+            }
+          ]
+        }
       },
       {
         "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/113",
         "initial_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/113",
         "final_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/exklusive-dachgeschosswohnung-mit-umlaufender-terrasse",
-        "captured_at": "2026-07-23T11:21:34Z",
+        "captured_at": "2026-07-23T11:31:02Z",
         "finder_plz": "13055",
         "finder_size": 97.74,
         "status": "current",
@@ -1463,7 +1688,7 @@
         "plz_found_on_expose": true,
         "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/wbm_9144496.png",
+        "screenshot": "screenshots/wbm_779463.png",
         "exposé": {
           "title": "Details - Wohnungsbaugesellschaft Berlin-Mitte mbH",
           "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/exklusive-dachgeschosswohnung-mit-umlaufender-terrasse",
@@ -1686,247 +1911,9 @@
             }
           ]
         }
-      },
-      {
-        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/6/127",
-        "initial_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/6/127",
-        "final_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/ideal-fuer-paare-u-kleine-familien-moderne-3-zimmer-wohnung-mit-balkon",
-        "captured_at": "2026-07-23T11:21:42Z",
-        "finder_plz": "13055",
-        "finder_size": 76.55,
-        "status": "current",
-        "http_status": 200,
-        "plz_found_on_expose": true,
-        "size_found_on_expose": true,
-        "expired_phrase": null,
-        "screenshot": "screenshots/wbm_7564331.png",
-        "exposé": {
-          "title": "Details - Wohnungsbaugesellschaft Berlin-Mitte mbH",
-          "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/ideal-fuer-paare-u-kleine-familien-moderne-3-zimmer-wohnung-mit-balkon",
-          "forms": [
-            {
-              "action": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_powermail_pi1%5Baction%5D=create&tx_powermail_pi1%5Bcontroller%5D=Form&cHash=2280b9865be8789b7cf284e2d8a42bc6#c722",
-              "method": "post",
-              "field_count": 16,
-              "fields": [
-                {
-                  "tag": "input",
-                  "type": "radio",
-                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
-                  "required": false,
-                  "label": "ja",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "radio",
-                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
-                  "required": false,
-                  "label": "nein",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "date",
-                  "name": "tx_powermail_pi1[field][wbsgueltigbis]",
-                  "required": false,
-                  "label": "WBS gültig bis",
-                  "options": null
-                },
-                {
-                  "tag": "select",
-                  "type": "select-one",
-                  "name": "tx_powermail_pi1[field][wbszimmeranzahl]",
-                  "required": false,
-                  "label": "WBS Zimmeranzahl",
-                  "options": [
-                    "1",
-                    "2",
-                    "3",
-                    "4",
-                    "5",
-                    "6",
-                    "7"
-                  ]
-                },
-                {
-                  "tag": "select",
-                  "type": "select-one",
-                  "name": "tx_powermail_pi1[field][einkommensgrenzenacheinkommensbescheinigung9]",
-                  "required": false,
-                  "label": "Einkommensgrenze nach Einkommensbescheinigung § 9",
-                  "options": [
-                    "WBS 100",
-                    "WBS 140",
-                    "WBS 160",
-                    "WBS 180",
-                    "WBS 220"
-                  ]
-                },
-                {
-                  "tag": "input",
-                  "type": "checkbox",
-                  "name": "tx_powermail_pi1[field][wbsmitbesonderemwohnbedarf][]",
-                  "required": false,
-                  "label": "ja",
-                  "options": null
-                },
-                {
-                  "tag": "select",
-                  "type": "select-one",
-                  "name": "tx_powermail_pi1[field][anrede]",
-                  "required": false,
-                  "label": "Anrede",
-                  "options": [
-                    "Frau",
-                    "Herr",
-                    "Offen"
-                  ]
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][name]",
-                  "required": true,
-                  "label": "Name*",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][vorname]",
-                  "required": true,
-                  "label": "Vorname*",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][strasse]",
-                  "required": false,
-                  "label": "Strasse",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][plz]",
-                  "required": false,
-                  "label": "PLZ",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][ort]",
-                  "required": false,
-                  "label": "Ort",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][e_mail]",
-                  "required": true,
-                  "label": "E-Mail*",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][telefon]",
-                  "required": false,
-                  "label": "Telefon",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "checkbox",
-                  "name": "tx_powermail_pi1[field][datenschutzhinweis][]",
-                  "required": true,
-                  "label": "Hiermit bestätige ich, dass ich die Hinweise zum Datenschutz gelesen habe. Ich b",
-                  "options": null
-                },
-                {
-                  "tag": "input",
-                  "type": "text",
-                  "name": "tx_powermail_pi1[field][__hp]",
-                  "required": false,
-                  "label": "Bitte dieses Feld NICHT ausfüllen!",
-                  "options": null
-                }
-              ]
-            }
-          ],
-          "captcha": null,
-          "requires_login": false,
-          "file_uploads": [],
-          "wbs_mentioned": true,
-          "apply_entries": [
-            {
-              "tag": "a",
-              "text": "Kontakt",
-              "href": "https://www.wbm.de/kontakt/"
-            },
-            {
-              "tag": "a",
-              "text": "Kundenportal Meine WBM",
-              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
-            },
-            {
-              "tag": "a",
-              "text": "",
-              "href": "https://www.wbm.de/presse/drehanfragen/"
-            },
-            {
-              "tag": "button",
-              "text": "Anfrage absenden",
-              "href": ""
-            }
-          ]
-        },
-        "followed_entry": {
-          "tag": "a",
-          "text": "Kontakt",
-          "href": "https://www.wbm.de/kontakt/"
-        },
-        "apply_http_status": 200,
-        "apply_page": {
-          "title": "Kontakt - Wohnungsbaugesellschaft Berlin-Mitte mbH",
-          "url": "https://www.wbm.de/kontakt/",
-          "forms": [],
-          "captcha": null,
-          "requires_login": false,
-          "file_uploads": [],
-          "wbs_mentioned": false,
-          "apply_entries": [
-            {
-              "tag": "a",
-              "text": "Kontakt",
-              "href": "https://www.wbm.de/kontakt/"
-            },
-            {
-              "tag": "a",
-              "text": "Kundenportal Meine WBM",
-              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
-            },
-            {
-              "tag": "a",
-              "text": "",
-              "href": "https://www.wbm.de/presse/drehanfragen/"
-            },
-            {
-              "tag": "a",
-              "text": "hier",
-              "href": "https://www.wbm.de/wohnungen-berlin/interesse-anmelden/"
-            }
-          ]
-        }
       }
     ],
     "target_current": 2,
-    "current_count": 2,
-    "satisfied": true,
     "structure": {
       "apply_entry": "https://www.wbm.de/kontakt/",
       "requires_login": false,
@@ -2086,6 +2073,8 @@
         "method": "post"
       },
       "form_count": 1
-    }
+    },
+    "current_count": 2,
+    "satisfied": true
   }
 }

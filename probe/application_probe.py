@@ -117,9 +117,16 @@ _FORM_SCAN_JS = r"""
                  field_count: fields.length, fields });
   }
   const html = document.documentElement.innerHTML;
-  const captcha = /recaptcha|g-recaptcha/i.test(html) ? 'recaptcha'
+  // Known captcha vendors, from the loaded HTML (no interaction needed). degewo's
+  // inquiry form uses Friendly Captcha (frc-captcha / data-sitekey), which the
+  // old recaptcha/hcaptcha/turnstile-only check missed. 'captcha?' is a
+  // last-resort flag (unknown vendor) so a human still gets a heads-up.
+  const captcha = /friendlycaptcha|frc-captcha/i.test(html) ? 'friendlycaptcha'
+                : /g-recaptcha|grecaptcha|recaptcha\/api/i.test(html) ? 'recaptcha'
                 : /hcaptcha/i.test(html) ? 'hcaptcha'
                 : /turnstile|cf-chl|challenge-platform/i.test(html) ? 'turnstile'
+                : /\baltcha\b/i.test(html) ? 'altcha'
+                : /data-sitekey|class="[^"]*captcha|name="[^"]*captcha/i.test(html) ? 'captcha?'
                 : null;
   const bodyText = document.body ? document.body.innerText : '';
   const rx = /bewerb|interess|kontakt|anfrage|anmeld|registr|login/i;
