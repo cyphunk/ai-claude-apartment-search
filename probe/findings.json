@@ -1,139 +1,1437 @@
 {
-  "gewobag": {
-    "samples": [
-      {
-        "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-1601-0582",
-        "captured_at": "2026-07-22T09:35:06Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/gewobag_1919825.png"
-      },
-      {
-        "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-1801-0654",
-        "captured_at": "2026-07-22T09:35:24Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/gewobag_4967352.png"
-      },
-      {
-        "url": "http://www.gewobag.de/",
-        "captured_at": "2026-07-22T09:36:12Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/gewobag_9226421.png"
-      }
-    ],
-    "target_current": 2,
-    "current_count": 0,
-    "satisfied": false
-  },
   "degewo": {
     "samples": [
       {
         "url": "https://www.degewo.de/de/properties/W1400-40684-0510-0702.html",
-        "captured_at": "2026-07-22T09:35:13Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
+        "initial_url": "https://www.degewo.de/de/properties/W1400-40684-0510-0702.html",
+        "final_url": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1",
+        "captured_at": "2026-07-23T11:20:47Z",
+        "finder_plz": "12689",
+        "finder_size": 34.36,
+        "status": "current",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/degewo_2971657.png"
+        "screenshot": "screenshots/degewo_5527267.png",
+        "exposé": {
+          "title": "1 Zimmer über den Dächern Berlins: degewo",
+          "url": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1",
+          "forms": [
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1?tx_form_formframework%5Baction%5D=perform&tx_form_formframework%5Bcontroller%5D=FormFrontend&cHash=15f2e9d9392b813e400da6a185ce8375#form_apartment_inquiry-2462",
+              "method": "post",
+              "field_count": 5,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2462][firstname]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2462][lastname]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "email",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2462][email]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2462][telephone]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "textarea",
+                  "type": "textarea",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2462][notes]",
+                  "required": false,
+                  "label": "",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Mieter-Login Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.degewo.de/mieterservice/kontakt"
+            },
+            {
+              "tag": "a",
+              "text": "Serviceportal",
+              "href": "https://www.degewo.de/mieterservice/kontakt/serviceportal"
+            },
+            {
+              "tag": "a",
+              "text": "Online-Service",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service"
+            },
+            {
+              "tag": "a",
+              "text": "Downloads",
+              "href": "https://www.degewo.de/mieterservice/kontakt/downloads"
+            },
+            {
+              "tag": "a",
+              "text": "Anfrage senden",
+              "href": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1#accordion-nl-rent-details"
+            },
+            {
+              "tag": "a",
+              "text": "Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakt",
+          "href": "https://www.degewo.de/mieterservice/kontakt"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakt aufnehmen | degewo Mieterservice: degewo",
+          "url": "https://www.degewo.de/mieterservice/kontakt",
+          "forms": [
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Mieter-Login Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.degewo.de/mieterservice/kontakt"
+            },
+            {
+              "tag": "a",
+              "text": "Serviceportal",
+              "href": "https://www.degewo.de/mieterservice/kontakt/serviceportal"
+            },
+            {
+              "tag": "a",
+              "text": "Online-Service",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service"
+            },
+            {
+              "tag": "a",
+              "text": "Downloads",
+              "href": "https://www.degewo.de/mieterservice/kontakt/downloads"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.degewo.de/mieterservice/ratgeber/mietverhaeltnis"
+            },
+            {
+              "tag": "a",
+              "text": "Kontaktformulare",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service"
+            },
+            {
+              "tag": "a",
+              "text": "zum Kontaktformular",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service/dienstleistungen-services/feedback"
+            },
+            {
+              "tag": "a",
+              "text": "Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            }
+          ]
+        }
       },
       {
-        "url": "https://www.degewo.de/de/properties/W1150-21705-0018-0210.html",
-        "captured_at": "2026-07-22T09:35:18Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
+        "url": "https://www.degewo.de/de/properties/W1400-40412-0500-0202.html",
+        "initial_url": "https://www.degewo.de/de/properties/W1400-40412-0500-0202.html",
+        "final_url": "https://www.degewo.de/immosuche/details/singlewohnung-fuer-berufseinsteiger-im-norden-von-marzahn",
+        "captured_at": "2026-07-23T11:20:55Z",
+        "finder_plz": "12689",
+        "finder_size": 32.6,
+        "status": "current",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/degewo_5057086.png"
-      },
-      {
-        "url": "https://www.degewo.de/de/properties/W1140-00667-0440-0705.html",
-        "captured_at": "2026-07-22T09:35:47Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/degewo_2211114.png"
-      },
-      {
-        "url": "http://www.degewo.de/",
-        "captured_at": "2026-07-22T09:36:00Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/degewo_9764199.png"
+        "screenshot": "screenshots/degewo_6575836.png",
+        "exposé": {
+          "title": "Singlewohnung für Berufseinsteiger im Norden von Marzahn: degewo",
+          "url": "https://www.degewo.de/immosuche/details/singlewohnung-fuer-berufseinsteiger-im-norden-von-marzahn",
+          "forms": [
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/immosuche/details/singlewohnung-fuer-berufseinsteiger-im-norden-von-marzahn?tx_form_formframework%5Baction%5D=perform&tx_form_formframework%5Bcontroller%5D=FormFrontend&cHash=15f2e9d9392b813e400da6a185ce8375#form_apartment_inquiry-2463",
+              "method": "post",
+              "field_count": 5,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2463][firstname]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2463][lastname]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "email",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2463][email]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2463][telephone]",
+                  "required": true,
+                  "label": "",
+                  "options": null
+                },
+                {
+                  "tag": "textarea",
+                  "type": "textarea",
+                  "name": "tx_form_formframework[form_apartment_inquiry-2463][notes]",
+                  "required": false,
+                  "label": "",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Mieter-Login Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.degewo.de/mieterservice/kontakt"
+            },
+            {
+              "tag": "a",
+              "text": "Serviceportal",
+              "href": "https://www.degewo.de/mieterservice/kontakt/serviceportal"
+            },
+            {
+              "tag": "a",
+              "text": "Online-Service",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service"
+            },
+            {
+              "tag": "a",
+              "text": "Downloads",
+              "href": "https://www.degewo.de/mieterservice/kontakt/downloads"
+            },
+            {
+              "tag": "a",
+              "text": "Anfrage senden",
+              "href": "https://www.degewo.de/immosuche/details/singlewohnung-fuer-berufseinsteiger-im-norden-von-marzahn#accordion-nl-rent-details"
+            },
+            {
+              "tag": "a",
+              "text": "Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakt",
+          "href": "https://www.degewo.de/mieterservice/kontakt"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakt aufnehmen | degewo Mieterservice: degewo",
+          "url": "https://www.degewo.de/mieterservice/kontakt",
+          "forms": [
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.degewo.de/suche",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_solr[q]",
+                  "required": false,
+                  "label": "Suche",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Mieter-Login Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.degewo.de/mieterservice/kontakt"
+            },
+            {
+              "tag": "a",
+              "text": "Serviceportal",
+              "href": "https://www.degewo.de/mieterservice/kontakt/serviceportal"
+            },
+            {
+              "tag": "a",
+              "text": "Online-Service",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service"
+            },
+            {
+              "tag": "a",
+              "text": "Downloads",
+              "href": "https://www.degewo.de/mieterservice/kontakt/downloads"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.degewo.de/mieterservice/ratgeber/mietverhaeltnis"
+            },
+            {
+              "tag": "a",
+              "text": "Kontaktformulare",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service"
+            },
+            {
+              "tag": "a",
+              "text": "zum Kontaktformular",
+              "href": "https://www.degewo.de/mieterservice/kontakt/online-service/dienstleistungen-services/feedback"
+            },
+            {
+              "tag": "a",
+              "text": "Mieter-Login",
+              "href": "https://meine.degewo.de/"
+            }
+          ]
+        }
       }
     ],
     "target_current": 2,
-    "current_count": 0,
+    "structure": {
+      "apply_entry": "https://www.degewo.de/mieterservice/kontakt",
+      "requires_login": false,
+      "captcha": null,
+      "wbs_required": false,
+      "file_uploads": [],
+      "fields": [
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_form_formframework[form_apartment_inquiry-2462][firstname]",
+          "required": true,
+          "label": "",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_form_formframework[form_apartment_inquiry-2462][lastname]",
+          "required": true,
+          "label": "",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "tx_form_formframework[form_apartment_inquiry-2462][email]",
+          "required": true,
+          "label": "",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_form_formframework[form_apartment_inquiry-2462][telephone]",
+          "required": true,
+          "label": "",
+          "options": null
+        },
+        {
+          "tag": "textarea",
+          "type": "textarea",
+          "name": "tx_form_formframework[form_apartment_inquiry-2462][notes]",
+          "required": false,
+          "label": "",
+          "options": null
+        }
+      ],
+      "submit_target": {
+        "action": "https://www.degewo.de/immosuche/details/1-zimmer-ueber-den-daechern-berlins-1?tx_form_formframework%5Baction%5D=perform&tx_form_formframework%5Bcontroller%5D=FormFrontend&cHash=15f2e9d9392b813e400da6a185ce8375#form_apartment_inquiry-2462",
+        "method": "post"
+      },
+      "form_count": 7
+    },
+    "current_count": 2,
+    "satisfied": true
+  },
+  "gewobag": {
+    "samples": [
+      {
+        "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307",
+        "initial_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307",
+        "final_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/",
+        "captured_at": "2026-07-23T11:21:03Z",
+        "finder_plz": "13627",
+        "finder_size": 66.22,
+        "status": "current",
+        "http_status": 200,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
+        "expired_phrase": null,
+        "screenshot": "screenshots/gewobag_232976.png",
+        "exposé": {
+          "title": "Helles Bad mit Dusche - Gewobag",
+          "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/",
+          "forms": [
+            {
+              "action": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/",
+              "method": "get",
+              "field_count": 3,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "essential",
+                  "required": false,
+                  "label": "Essenziell",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "statistics",
+                  "required": false,
+                  "label": "Statistiken",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "external-media",
+                  "required": false,
+                  "label": "Externe Medien",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": "turnstile",
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Login",
+              "href": "https://www.gewobag.de/login/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakte für Mieter",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/"
+            },
+            {
+              "tag": "a",
+              "text": "Für MietinteressentInnen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/#"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Wohnungsangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/wohnung/"
+            },
+            {
+              "tag": "a",
+              "text": "Informationen zur Wohnungssuche",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/wohnungssuche/"
+            },
+            {
+              "tag": "a",
+              "text": "Wohnen im Alter",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/wohnen-im-alter/"
+            },
+            {
+              "tag": "a",
+              "text": "Das Tauschportal der Landeseigenen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/tauschportal/"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Gewerbeangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Unser Gewerberaumportfolio",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Stellplatz- undGaragenangebote finden",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/suche/parken/"
+            },
+            {
+              "tag": "a",
+              "text": "Ihr E-Stellplatz im Quartier",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/ihr-e-stellplatz-im-quartier/"
+            },
+            {
+              "tag": "a",
+              "text": "Lagerraum mieten",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/lagerraum-berlin/"
+            },
+            {
+              "tag": "a",
+              "text": "Suchauftrag anlegen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?open-suchagent-form=create-form"
+            },
+            {
+              "tag": "a",
+              "text": "Stadtteilinfos",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/stadtteilinfos/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakte",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/#"
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakte für Mieter",
+          "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakte für unsere MieterInnenGewobag",
+          "url": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/",
+          "forms": [
+            {
+              "action": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "address",
+                  "required": true,
+                  "label": "Ihre Adresse",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "ref: <Node>",
+              "method": "post",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "search",
+                  "name": "search_word",
+                  "required": false,
+                  "label": "Ihre Straße und Hausnummer",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": "turnstile",
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Login",
+              "href": "https://www.gewobag.de/login/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakte für Mieter",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/"
+            },
+            {
+              "tag": "a",
+              "text": "Für MietinteressentInnen",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/#"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Wohnungsangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/wohnung/"
+            },
+            {
+              "tag": "a",
+              "text": "Informationen zur Wohnungssuche",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/wohnungssuche/"
+            },
+            {
+              "tag": "a",
+              "text": "Wohnen im Alter",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/wohnen-im-alter/"
+            },
+            {
+              "tag": "a",
+              "text": "Das Tauschportal der Landeseigenen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/tauschportal/"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Gewerbeangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Unser Gewerberaumportfolio",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Stellplatz- undGaragenangebote finden",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/suche/parken/"
+            },
+            {
+              "tag": "a",
+              "text": "Ihr E-Stellplatz im Quartier",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/ihr-e-stellplatz-im-quartier/"
+            },
+            {
+              "tag": "a",
+              "text": "Lagerraum mieten",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/lagerraum-berlin/"
+            },
+            {
+              "tag": "a",
+              "text": "Suchauftrag anlegen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?open-suchagent-form=create-form"
+            },
+            {
+              "tag": "a",
+              "text": "Stadtteilinfos",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/stadtteilinfos/"
+            },
+            {
+              "tag": "a",
+              "text": "Aktuelle Rubrik: Kontakte",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/#"
+            }
+          ]
+        }
+      },
+      {
+        "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610",
+        "initial_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610",
+        "final_url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610/",
+        "captured_at": "2026-07-23T11:21:49Z",
+        "finder_plz": "13583",
+        "finder_size": 77.73,
+        "status": "current",
+        "http_status": 200,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
+        "expired_phrase": null,
+        "screenshot": "screenshots/gewobag_9051544.png",
+        "exposé": {
+          "title": "Familienwohnung ab sofort verfügbar - Gewobag",
+          "url": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610/",
+          "forms": [],
+          "captcha": "turnstile",
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Login",
+              "href": "https://www.gewobag.de/login/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakte für Mieter",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/"
+            },
+            {
+              "tag": "a",
+              "text": "Für MietinteressentInnen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610/#"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Wohnungsangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/wohnung/"
+            },
+            {
+              "tag": "a",
+              "text": "Informationen zur Wohnungssuche",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/wohnungssuche/"
+            },
+            {
+              "tag": "a",
+              "text": "Wohnen im Alter",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/wohnen-im-alter/"
+            },
+            {
+              "tag": "a",
+              "text": "Das Tauschportal der Landeseigenen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/tauschportal/"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Gewerbeangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Unser Gewerberaumportfolio",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Stellplatz- undGaragenangebote finden",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/suche/parken/"
+            },
+            {
+              "tag": "a",
+              "text": "Ihr E-Stellplatz im Quartier",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/ihr-e-stellplatz-im-quartier/"
+            },
+            {
+              "tag": "a",
+              "text": "Lagerraum mieten",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/lagerraum-berlin/"
+            },
+            {
+              "tag": "a",
+              "text": "Suchauftrag anlegen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?open-suchagent-form=create-form"
+            },
+            {
+              "tag": "a",
+              "text": "Stadtteilinfos",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/stadtteilinfos/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakte",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/7100-70801-0704-0610/#"
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakte für Mieter",
+          "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakte für unsere MieterInnenGewobag",
+          "url": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/",
+          "forms": [
+            {
+              "action": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/",
+              "method": "get",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "address",
+                  "required": true,
+                  "label": "Ihre Adresse",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "ref: <Node>",
+              "method": "post",
+              "field_count": 1,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "search",
+                  "name": "search_word",
+                  "required": false,
+                  "label": "Ihre Straße und Hausnummer",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": "turnstile",
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Login",
+              "href": "https://www.gewobag.de/login/"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakte für Mieter",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/"
+            },
+            {
+              "tag": "a",
+              "text": "Für MietinteressentInnen",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/#"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Wohnungsangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/wohnung/"
+            },
+            {
+              "tag": "a",
+              "text": "Informationen zur Wohnungssuche",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/wohnungssuche/"
+            },
+            {
+              "tag": "a",
+              "text": "Wohnen im Alter",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/wohnen-im-alter/"
+            },
+            {
+              "tag": "a",
+              "text": "Das Tauschportal der Landeseigenen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/tauschportal/"
+            },
+            {
+              "tag": "a",
+              "text": "aktuelle Gewerbeangebote",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Unser Gewerberaumportfolio",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/gewerbe/"
+            },
+            {
+              "tag": "a",
+              "text": "Stellplatz- undGaragenangebote finden",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/suche/parken/"
+            },
+            {
+              "tag": "a",
+              "text": "Ihr E-Stellplatz im Quartier",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/ihr-e-stellplatz-im-quartier/"
+            },
+            {
+              "tag": "a",
+              "text": "Lagerraum mieten",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote-finden/lagerraum-berlin/"
+            },
+            {
+              "tag": "a",
+              "text": "Suchauftrag anlegen",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?open-suchagent-form=create-form"
+            },
+            {
+              "tag": "a",
+              "text": "Stadtteilinfos",
+              "href": "https://www.gewobag.de/fuer-mietinteressentinnen/stadtteilinfos/"
+            },
+            {
+              "tag": "a",
+              "text": "Aktuelle Rubrik: Kontakte",
+              "href": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/#"
+            }
+          ]
+        }
+      }
+    ],
+    "target_current": 2,
+    "structure": {
+      "apply_entry": "https://www.gewobag.de/ueber-uns/kontakte/fuer-unsere-mieter/",
+      "requires_login": false,
+      "captcha": "turnstile",
+      "wbs_required": false,
+      "file_uploads": [],
+      "fields": [
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "essential",
+          "required": false,
+          "label": "Essenziell",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "statistics",
+          "required": false,
+          "label": "Statistiken",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "external-media",
+          "required": false,
+          "label": "Externe Medien",
+          "options": null
+        }
+      ],
+      "submit_target": {
+        "action": "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/0100-01609-0901-0307/",
+        "method": "get"
+      },
+      "form_count": 3
+    },
+    "current_count": 2,
+    "satisfied": true
+  },
+  "berlinovo": {
+    "samples": [
+      {
+        "url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
+        "initial_url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
+        "final_url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
+        "captured_at": "2026-07-23T11:21:11Z",
+        "finder_plz": "12629",
+        "finder_size": 69.75,
+        "status": "current",
+        "http_status": 200,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
+        "expired_phrase": null,
+        "screenshot": "screenshots/berlinovo_4505819.png",
+        "exposé": {
+          "title": "Schöne Familienwohnung mit Balkon am Kaufpark Eiche. | berlinovo",
+          "url": "https://www.berlinovo.de/de/wohnung-id/1814-2601-358",
+          "forms": [],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": true,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.berlinovo.de/de/kontakt"
+            },
+            {
+              "tag": "a",
+              "text": "Vermietungsanfrage",
+              "href": "https://app.wohnungshelden.de/public/listings/1814%2F2601%2F358/application?c=6cd678f5-036a-44fa-970f-65224c4d4506"
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakt",
+          "href": "https://www.berlinovo.de/de/kontakt"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakt | berlinovo",
+          "url": "https://www.berlinovo.de/de/kontakt",
+          "forms": [
+            {
+              "action": "https://www.berlinovo.de/de/kontakt#",
+              "method": "get",
+              "field_count": 4,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "search-type",
+                  "required": false,
+                  "label": "Wohnungen",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "search-type",
+                  "required": false,
+                  "label": "Apartments",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "search-type",
+                  "required": false,
+                  "label": "Gewerbe",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "search-type",
+                  "required": false,
+                  "label": "Verkaufsobjekt",
+                  "options": null
+                }
+              ]
+            },
+            {
+              "action": "https://www.berlinovo.de/de/kontakt#",
+              "method": "get",
+              "field_count": 7,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "address",
+                  "required": false,
+                  "label": "Wo? z.B. Bundesland, Ort, Adresse oder Sehenwürdigkeit",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "number",
+                  "name": "field_total_rent",
+                  "required": false,
+                  "label": "max. Preis",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "number",
+                  "name": "field_rooms",
+                  "required": false,
+                  "label": "min. Zimmer",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "number",
+                  "name": "field_net_area",
+                  "required": false,
+                  "label": "min. Fläche",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "field_wbs",
+                  "required": false,
+                  "label": "WBS-Wohnung",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "field_seniorengerecht",
+                  "required": false,
+                  "label": "Seniorenfreundlich",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "submit",
+                  "name": "",
+                  "required": false,
+                  "label": "",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": true,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Deutsch",
+              "href": "https://www.berlinovo.de/de/kontakt"
+            },
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.berlinovo.de/de/kontakt"
+            }
+          ]
+        }
+      }
+    ],
+    "target_current": 2,
+    "structure": {
+      "apply_entry": "https://www.berlinovo.de/de/kontakt",
+      "requires_login": false,
+      "captcha": null,
+      "wbs_required": true,
+      "file_uploads": [],
+      "fields": [
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "address",
+          "required": false,
+          "label": "Wo? z.B. Bundesland, Ort, Adresse oder Sehenwürdigkeit",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "number",
+          "name": "field_total_rent",
+          "required": false,
+          "label": "max. Preis",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "number",
+          "name": "field_rooms",
+          "required": false,
+          "label": "min. Zimmer",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "number",
+          "name": "field_net_area",
+          "required": false,
+          "label": "min. Fläche",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "field_wbs",
+          "required": false,
+          "label": "WBS-Wohnung",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "field_seniorengerecht",
+          "required": false,
+          "label": "Seniorenfreundlich",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "submit",
+          "name": "",
+          "required": false,
+          "label": "",
+          "options": null
+        }
+      ],
+      "submit_target": {
+        "action": "https://www.berlinovo.de/de/kontakt#",
+        "method": "get"
+      },
+      "form_count": 2
+    },
+    "current_count": 1,
     "satisfied": false
   },
   "howoge": {
     "samples": [
       {
-        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-24063-184.html?t=ibw",
-        "captured_at": "2026-07-22T09:35:29Z",
-        "expected_plz": "",
-        "expected_size": null,
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12156-17.html?t=ibw",
+        "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12156-17.html?t=ibw",
+        "final_url": "https://www.howoge.de/404",
+        "captured_at": "2026-07-23T11:21:17Z",
+        "finder_plz": "13051",
+        "finder_size": 83.59,
         "status": "expired",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/howoge_5922183.png"
+        "plz_found_on_expose": false,
+        "size_found_on_expose": false,
+        "expired_phrase": "nicht mehr verfügbar",
+        "screenshot": "screenshots/howoge_4657081.png"
       },
       {
-        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-14578-28.html?t=ibw",
-        "captured_at": "2026-07-22T09:35:52Z",
-        "expected_plz": "",
-        "expected_size": null,
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20549-145.html?t=ibw",
+        "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20549-145.html?t=ibw",
+        "final_url": "https://www.howoge.de/404",
+        "captured_at": "2026-07-23T11:21:21Z",
+        "finder_plz": "10319",
+        "finder_size": 57.31,
         "status": "expired",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/howoge_7556195.png"
+        "plz_found_on_expose": false,
+        "size_found_on_expose": false,
+        "expired_phrase": "nicht mehr verfügbar",
+        "screenshot": "screenshots/howoge_1764075.png"
       },
       {
-        "url": "https://unternehmen.howoge.de/unternehmen/ueber-uns.html",
-        "captured_at": "2026-07-22T09:36:17Z",
-        "expected_plz": "",
-        "expected_size": null,
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12344-35.html?t=ibw",
+        "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1771-12344-35.html?t=ibw",
+        "final_url": "https://www.howoge.de/404",
+        "captured_at": "2026-07-23T11:21:24Z",
+        "finder_plz": "13051",
+        "finder_size": 63.63,
         "status": "expired",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/howoge_9945985.png"
+        "plz_found_on_expose": false,
+        "size_found_on_expose": false,
+        "expired_phrase": "nicht mehr verfügbar",
+        "screenshot": "screenshots/howoge_5267625.png"
+      },
+      {
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20584-108.html?t=ibw",
+        "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20584-108.html?t=ibw",
+        "final_url": "https://www.howoge.de/404",
+        "captured_at": "2026-07-23T11:21:27Z",
+        "finder_plz": "10315",
+        "finder_size": 53.06,
+        "status": "expired",
+        "http_status": 200,
+        "plz_found_on_expose": false,
+        "size_found_on_expose": false,
+        "expired_phrase": "nicht mehr verfügbar",
+        "screenshot": "screenshots/howoge_5695451.png"
+      },
+      {
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-24705-35.html?t=ibw",
+        "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-24705-35.html?t=ibw",
+        "final_url": "https://www.howoge.de/404",
+        "captured_at": "2026-07-23T11:21:58Z",
+        "finder_plz": "10365",
+        "finder_size": 49.61,
+        "status": "expired",
+        "http_status": 200,
+        "plz_found_on_expose": false,
+        "size_found_on_expose": false,
+        "expired_phrase": "nicht mehr verfügbar",
+        "screenshot": "screenshots/howoge_3849702.png"
+      },
+      {
+        "url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20515-58.html?t=ibw",
+        "initial_url": "https://www.howoge.de/wohnungen-gewerbe/wohnungssuche/detail/1770-20515-58.html?t=ibw",
+        "final_url": "https://www.howoge.de/404",
+        "captured_at": "2026-07-23T11:22:01Z",
+        "finder_plz": "10319",
+        "finder_size": 61.5,
+        "status": "expired",
+        "http_status": 200,
+        "plz_found_on_expose": false,
+        "size_found_on_expose": false,
+        "expired_phrase": "nicht mehr verfügbar",
+        "screenshot": "screenshots/howoge_7004327.png"
       }
     ],
     "target_current": 2,
@@ -143,113 +1441,651 @@
   "wbm": {
     "samples": [
       {
-        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/96",
-        "captured_at": "2026-07-22T09:35:35Z",
-        "expected_plz": "",
-        "expected_size": null,
+        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/102",
+        "initial_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/102",
+        "final_url": null,
+        "captured_at": "2026-07-23T11:21:30Z",
+        "finder_plz": "13055",
+        "finder_size": 84.9,
         "status": "expired",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/wbm_759606.png"
+        "error": "TargetClosedError('Page.wait_for_timeout: Target page, context or browser has been closed')"
       },
       {
-        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/3/49",
-        "captured_at": "2026-07-22T09:35:39Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
+        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/113",
+        "initial_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/5/113",
+        "final_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/exklusive-dachgeschosswohnung-mit-umlaufender-terrasse",
+        "captured_at": "2026-07-23T11:21:34Z",
+        "finder_plz": "13055",
+        "finder_size": 97.74,
+        "status": "current",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/wbm_1149919.png"
+        "screenshot": "screenshots/wbm_9144496.png",
+        "exposé": {
+          "title": "Details - Wohnungsbaugesellschaft Berlin-Mitte mbH",
+          "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/exklusive-dachgeschosswohnung-mit-umlaufender-terrasse",
+          "forms": [
+            {
+              "action": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_powermail_pi1%5Baction%5D=create&tx_powermail_pi1%5Bcontroller%5D=Form&cHash=2280b9865be8789b7cf284e2d8a42bc6#c722",
+              "method": "post",
+              "field_count": 16,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
+                  "required": false,
+                  "label": "ja",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
+                  "required": false,
+                  "label": "nein",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "date",
+                  "name": "tx_powermail_pi1[field][wbsgueltigbis]",
+                  "required": false,
+                  "label": "WBS gültig bis",
+                  "options": null
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][wbszimmeranzahl]",
+                  "required": false,
+                  "label": "WBS Zimmeranzahl",
+                  "options": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7"
+                  ]
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][einkommensgrenzenacheinkommensbescheinigung9]",
+                  "required": false,
+                  "label": "Einkommensgrenze nach Einkommensbescheinigung § 9",
+                  "options": [
+                    "WBS 100",
+                    "WBS 140",
+                    "WBS 160",
+                    "WBS 180",
+                    "WBS 220"
+                  ]
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "tx_powermail_pi1[field][wbsmitbesonderemwohnbedarf][]",
+                  "required": false,
+                  "label": "ja",
+                  "options": null
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][anrede]",
+                  "required": false,
+                  "label": "Anrede",
+                  "options": [
+                    "Frau",
+                    "Herr",
+                    "Offen"
+                  ]
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][name]",
+                  "required": true,
+                  "label": "Name*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][vorname]",
+                  "required": true,
+                  "label": "Vorname*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][strasse]",
+                  "required": false,
+                  "label": "Strasse",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][plz]",
+                  "required": false,
+                  "label": "PLZ",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][ort]",
+                  "required": false,
+                  "label": "Ort",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][e_mail]",
+                  "required": true,
+                  "label": "E-Mail*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][telefon]",
+                  "required": false,
+                  "label": "Telefon",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "tx_powermail_pi1[field][datenschutzhinweis][]",
+                  "required": true,
+                  "label": "Hiermit bestätige ich, dass ich die Hinweise zum Datenschutz gelesen habe. Ich b",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][__hp]",
+                  "required": false,
+                  "label": "Bitte dieses Feld NICHT ausfüllen!",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": true,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.wbm.de/kontakt/"
+            },
+            {
+              "tag": "a",
+              "text": "Kundenportal Meine WBM",
+              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
+            },
+            {
+              "tag": "a",
+              "text": "",
+              "href": "https://www.wbm.de/presse/drehanfragen/"
+            },
+            {
+              "tag": "button",
+              "text": "Anfrage absenden",
+              "href": ""
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakt",
+          "href": "https://www.wbm.de/kontakt/"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakt - Wohnungsbaugesellschaft Berlin-Mitte mbH",
+          "url": "https://www.wbm.de/kontakt/",
+          "forms": [],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.wbm.de/kontakt/"
+            },
+            {
+              "tag": "a",
+              "text": "Kundenportal Meine WBM",
+              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
+            },
+            {
+              "tag": "a",
+              "text": "",
+              "href": "https://www.wbm.de/presse/drehanfragen/"
+            },
+            {
+              "tag": "a",
+              "text": "hier",
+              "href": "https://www.wbm.de/wohnungen-berlin/interesse-anmelden/"
+            }
+          ]
+        }
       },
       {
-        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/1/1",
-        "captured_at": "2026-07-22T09:35:43Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
+        "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/6/127",
+        "initial_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_openimmo_immobilie[immobilie]=50-867507/6/127",
+        "final_url": "https://www.wbm.de/wohnungen-berlin/angebote/details/ideal-fuer-paare-u-kleine-familien-moderne-3-zimmer-wohnung-mit-balkon",
+        "captured_at": "2026-07-23T11:21:42Z",
+        "finder_plz": "13055",
+        "finder_size": 76.55,
+        "status": "current",
         "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
+        "plz_found_on_expose": true,
+        "size_found_on_expose": true,
         "expired_phrase": null,
-        "screenshot": "screenshots/wbm_9110196.png"
+        "screenshot": "screenshots/wbm_7564331.png",
+        "exposé": {
+          "title": "Details - Wohnungsbaugesellschaft Berlin-Mitte mbH",
+          "url": "https://www.wbm.de/wohnungen-berlin/angebote/details/ideal-fuer-paare-u-kleine-familien-moderne-3-zimmer-wohnung-mit-balkon",
+          "forms": [
+            {
+              "action": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_powermail_pi1%5Baction%5D=create&tx_powermail_pi1%5Bcontroller%5D=Form&cHash=2280b9865be8789b7cf284e2d8a42bc6#c722",
+              "method": "post",
+              "field_count": 16,
+              "fields": [
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
+                  "required": false,
+                  "label": "ja",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "radio",
+                  "name": "tx_powermail_pi1[field][wbsvorhanden]",
+                  "required": false,
+                  "label": "nein",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "date",
+                  "name": "tx_powermail_pi1[field][wbsgueltigbis]",
+                  "required": false,
+                  "label": "WBS gültig bis",
+                  "options": null
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][wbszimmeranzahl]",
+                  "required": false,
+                  "label": "WBS Zimmeranzahl",
+                  "options": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7"
+                  ]
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][einkommensgrenzenacheinkommensbescheinigung9]",
+                  "required": false,
+                  "label": "Einkommensgrenze nach Einkommensbescheinigung § 9",
+                  "options": [
+                    "WBS 100",
+                    "WBS 140",
+                    "WBS 160",
+                    "WBS 180",
+                    "WBS 220"
+                  ]
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "tx_powermail_pi1[field][wbsmitbesonderemwohnbedarf][]",
+                  "required": false,
+                  "label": "ja",
+                  "options": null
+                },
+                {
+                  "tag": "select",
+                  "type": "select-one",
+                  "name": "tx_powermail_pi1[field][anrede]",
+                  "required": false,
+                  "label": "Anrede",
+                  "options": [
+                    "Frau",
+                    "Herr",
+                    "Offen"
+                  ]
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][name]",
+                  "required": true,
+                  "label": "Name*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][vorname]",
+                  "required": true,
+                  "label": "Vorname*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][strasse]",
+                  "required": false,
+                  "label": "Strasse",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][plz]",
+                  "required": false,
+                  "label": "PLZ",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][ort]",
+                  "required": false,
+                  "label": "Ort",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][e_mail]",
+                  "required": true,
+                  "label": "E-Mail*",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][telefon]",
+                  "required": false,
+                  "label": "Telefon",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "checkbox",
+                  "name": "tx_powermail_pi1[field][datenschutzhinweis][]",
+                  "required": true,
+                  "label": "Hiermit bestätige ich, dass ich die Hinweise zum Datenschutz gelesen habe. Ich b",
+                  "options": null
+                },
+                {
+                  "tag": "input",
+                  "type": "text",
+                  "name": "tx_powermail_pi1[field][__hp]",
+                  "required": false,
+                  "label": "Bitte dieses Feld NICHT ausfüllen!",
+                  "options": null
+                }
+              ]
+            }
+          ],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": true,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.wbm.de/kontakt/"
+            },
+            {
+              "tag": "a",
+              "text": "Kundenportal Meine WBM",
+              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
+            },
+            {
+              "tag": "a",
+              "text": "",
+              "href": "https://www.wbm.de/presse/drehanfragen/"
+            },
+            {
+              "tag": "button",
+              "text": "Anfrage absenden",
+              "href": ""
+            }
+          ]
+        },
+        "followed_entry": {
+          "tag": "a",
+          "text": "Kontakt",
+          "href": "https://www.wbm.de/kontakt/"
+        },
+        "apply_http_status": 200,
+        "apply_page": {
+          "title": "Kontakt - Wohnungsbaugesellschaft Berlin-Mitte mbH",
+          "url": "https://www.wbm.de/kontakt/",
+          "forms": [],
+          "captcha": null,
+          "requires_login": false,
+          "file_uploads": [],
+          "wbs_mentioned": false,
+          "apply_entries": [
+            {
+              "tag": "a",
+              "text": "Kontakt",
+              "href": "https://www.wbm.de/kontakt/"
+            },
+            {
+              "tag": "a",
+              "text": "Kundenportal Meine WBM",
+              "href": "https://meinewbm-crmportal.aareon.com/site/mieterlogin/anmeldung"
+            },
+            {
+              "tag": "a",
+              "text": "",
+              "href": "https://www.wbm.de/presse/drehanfragen/"
+            },
+            {
+              "tag": "a",
+              "text": "hier",
+              "href": "https://www.wbm.de/wohnungen-berlin/interesse-anmelden/"
+            }
+          ]
+        }
+      }
+    ],
+    "target_current": 2,
+    "current_count": 2,
+    "satisfied": true,
+    "structure": {
+      "apply_entry": "https://www.wbm.de/kontakt/",
+      "requires_login": false,
+      "captcha": null,
+      "wbs_required": true,
+      "file_uploads": [],
+      "fields": [
+        {
+          "tag": "input",
+          "type": "radio",
+          "name": "tx_powermail_pi1[field][wbsvorhanden]",
+          "required": false,
+          "label": "ja",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "radio",
+          "name": "tx_powermail_pi1[field][wbsvorhanden]",
+          "required": false,
+          "label": "nein",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "date",
+          "name": "tx_powermail_pi1[field][wbsgueltigbis]",
+          "required": false,
+          "label": "WBS gültig bis",
+          "options": null
+        },
+        {
+          "tag": "select",
+          "type": "select-one",
+          "name": "tx_powermail_pi1[field][wbszimmeranzahl]",
+          "required": false,
+          "label": "WBS Zimmeranzahl",
+          "options": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7"
+          ]
+        },
+        {
+          "tag": "select",
+          "type": "select-one",
+          "name": "tx_powermail_pi1[field][einkommensgrenzenacheinkommensbescheinigung9]",
+          "required": false,
+          "label": "Einkommensgrenze nach Einkommensbescheinigung § 9",
+          "options": [
+            "WBS 100",
+            "WBS 140",
+            "WBS 160",
+            "WBS 180",
+            "WBS 220"
+          ]
+        },
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "tx_powermail_pi1[field][wbsmitbesonderemwohnbedarf][]",
+          "required": false,
+          "label": "ja",
+          "options": null
+        },
+        {
+          "tag": "select",
+          "type": "select-one",
+          "name": "tx_powermail_pi1[field][anrede]",
+          "required": false,
+          "label": "Anrede",
+          "options": [
+            "Frau",
+            "Herr",
+            "Offen"
+          ]
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][name]",
+          "required": true,
+          "label": "Name*",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][vorname]",
+          "required": true,
+          "label": "Vorname*",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][strasse]",
+          "required": false,
+          "label": "Strasse",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][plz]",
+          "required": false,
+          "label": "PLZ",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][ort]",
+          "required": false,
+          "label": "Ort",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][e_mail]",
+          "required": true,
+          "label": "E-Mail*",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][telefon]",
+          "required": false,
+          "label": "Telefon",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "checkbox",
+          "name": "tx_powermail_pi1[field][datenschutzhinweis][]",
+          "required": true,
+          "label": "Hiermit bestätige ich, dass ich die Hinweise zum Datenschutz gelesen habe. Ich b",
+          "options": null
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "tx_powermail_pi1[field][__hp]",
+          "required": false,
+          "label": "Bitte dieses Feld NICHT ausfüllen!",
+          "options": null
+        }
+      ],
+      "submit_target": {
+        "action": "https://www.wbm.de/wohnungen-berlin/angebote/details/?tx_powermail_pi1%5Baction%5D=create&tx_powermail_pi1%5Bcontroller%5D=Form&cHash=2280b9865be8789b7cf284e2d8a42bc6#c722",
+        "method": "post"
       },
-      {
-        "url": "http://www.wbm.de/",
-        "captured_at": "2026-07-22T09:36:27Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/wbm_8435716.png"
-      }
-    ],
-    "target_current": 2,
-    "current_count": 0,
-    "satisfied": false
-  },
-  "berlinovo": {
-    "samples": [
-      {
-        "url": "https://www.berlinovo.de/de",
-        "captured_at": "2026-07-22T09:35:57Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/berlinovo_221763.png"
-      }
-    ],
-    "target_current": 2,
-    "current_count": 0,
-    "satisfied": false
-  },
-  "gesobau": {
-    "samples": [
-      {
-        "url": "http://www.gesobau.de/",
-        "captured_at": "2026-07-22T09:36:05Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": null,
-        "screenshot": "screenshots/gesobau_6333912.png"
-      }
-    ],
-    "target_current": 2,
-    "current_count": 0,
-    "satisfied": false
-  },
-  "stadtundland": {
-    "samples": [
-      {
-        "url": "http://www.stadtundland.de/",
-        "captured_at": "2026-07-22T09:36:23Z",
-        "expected_plz": "",
-        "expected_size": null,
-        "status": "expired",
-        "http_status": 200,
-        "plz_echoed": false,
-        "size_echoed": false,
-        "expired_phrase": "404",
-        "screenshot": "screenshots/stadtundland_2711084.png"
-      }
-    ],
-    "target_current": 2,
-    "current_count": 0,
-    "satisfied": false
+      "form_count": 1
+    }
   }
 }

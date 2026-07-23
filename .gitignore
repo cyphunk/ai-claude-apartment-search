@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
 .env
+venv
 #seen_listings.json
 debug_howoge.html

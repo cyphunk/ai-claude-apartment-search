@@ -6,9 +6,9 @@ Standalone from the watcher. It:
   2. harvests currently-listed vacancies grouped by landeseigene company
      (HOWOGE, degewo, GESOBAU, Gewobag, STADT UND LAND, WBM, berlinovo),
   3. opens each candidate exposé and decides whether the listing is CURRENT
-     (the exposé still shows the listing's OWN PLZ and m² size — taken from the
-     finder index and kept authoritative — so a redirect to a generic/other page
-     reads as expired even if it lists other active flats),
+     (the exposé echoes BOTH the PLZ and the m² size from the finder card) or
+     expired (expired listings usually show a generic page, whose form is
+     meaningless),
   4. for CURRENT listings only, maps the application pathway: the apply entry
      ("bewerben"), form fields (+ required flags), login wall, captcha, document
      uploads, whether WBS is asked, and the form's submit target,
@@ -21,7 +21,7 @@ whether/how to build a real auto-applier later.
 
 Usage:
     python3 probe/application_probe.py [--companies howoge,degewo,...]
-                                       [--target-current N=2] [--max-pages N=3]
+                                       [--target-current N=2]
                                        [--refresh all|c1,c2] [--headful]
 """
 import os
@@ -56,15 +56,12 @@ _DETAIL_RE = re.compile(
     r"detail|mietangebote|properties|immo_ref|wohnung-id|t=ibw|expose|angebot",
     re.IGNORECASE)
 
-# Phrases that mark a dead/expired/DEACTIVATED/generic listing page. Some sites
-# keep the flat's own PLZ+size on a deactivated page (so the echo check passes) —
-# these phrases catch that. See probe/PROBE_NOTES.md for per-company sources.
+# Phrases that mark a dead/expired/generic listing page.
 _EXPIRED_PHRASES = [
     "nicht mehr verfügbar", "nicht mehr verfuegbar", "bereits vergeben",
     "leider vergeben", "leider schon vergeben", "existiert nicht",
     "abgelaufen", "nicht gefunden", "seite nicht gefunden", "404",
     "keine ergebnisse", "zurzeit keine",
-    "inserat deaktiviert",   # degewo: deactivated exposé still shows PLZ+size
 ]
 
 # The seven company sites use assorted CMPs (Usercentrics — often in a shadow
@@ -219,33 +216,26 @@ def _size_matches(expected: float, page_text: str) -> bool:
     return False
 
 
-_EURO_RE = re.compile(r"([\d][\d.\s]*,\d{2})\s*(?:€|EUR)", re.IGNORECASE)
+def _page_plzs(text: str) -> set:
+    """All Berlin PLZ (10xxx–14xxx) present in text."""
+    return set(re.findall(r"\b1[0-4]\d{3}\b", text or ""))
 
 
-def _parse_euro(text: str) -> float:
-    """Parse German money like '1.234,56 €' -> 1234.56 (first match), else 0.0."""
-    m = _EURO_RE.search(text or "")
-    if not m:
-        return 0.0
-    try:
-        return float(m.group(1).replace(" ", "").replace(".", "").replace(",", "."))
-    except ValueError:
-        return 0.0
+def _page_sizes(text: str) -> list:
+    """All m² values present in text, as floats."""
+    out = []
+    for m in re.finditer(r"(\d{1,3}(?:[.,]\d{1,2})?)\s*m(?:²|2)\b", text or "", re.IGNORECASE):
+        try:
+            out.append(float(m.group(1).replace(",", ".")))
+        except ValueError:
+            pass
+    return out
 
 
-def _de_price(v: float) -> str:
-    """1037.0 -> '1.037,00' (German formatting, as the finder prints it)."""
-    return f"{v:,.2f}".replace(",", "§").replace(".", ",").replace("§", ".")
-
-
-# --- Livewire finder payload + rendered cards -> per-listing (URL, PLZ, size) --
-# The finder's rendered cards carry the company detail URL but not a reliable PLZ;
-# the Livewire markers carry PLZ+size+street+price but no URL. So — exactly like
-# the watcher — we read listings from the markers and join each to its UNIQUE
-# rendered card (street + size + cold rent) to attach the real detail URL. That
-# gives every candidate its OWN authoritative PLZ+size from the index, which we
-# then look for on the exposé to decide active vs. gone. Helpers are copied (not
-# imported) from howoge_watch.py so this probe stays standalone.
+# --- Livewire finder payload -> the set of currently-live (PLZ, m²) pairs -----
+# The finder's rendered cards don't reliably show a PLZ, so — like the watcher —
+# we read tokens from the Livewire map payload instead. Helpers below are copied
+# (not imported) from howoge_watch.py so this probe stays standalone.
 def _strip_tags(html_text: str) -> str:
     return " ".join(re.sub(r"<[^>]+>", " ", html_text or "").split())
 
@@ -267,143 +257,22 @@ def _iter_cluster_markers(obj):
             yield from _iter_cluster_markers(v)
 
 
-def listings_from_payloads(payloads: list) -> list:
-    """Every currently-listed vacancy from the Livewire markers, as dicts with the
-    fields we need to (a) identify the flat on a rendered card and (b) probe its
-    exposé: {plz, size (float), size_str, street, cold}."""
-    out = []
+def live_set_from_payloads(payloads: list) -> set:
+    """Build {(plz, size_float)} for every currently-listed vacancy from the
+    captured Livewire JSON responses."""
+    live = set()
     for payload in payloads:
         if not isinstance(payload, dict):
             continue
         for comp in (payload.get("components") or []):
             effects = comp.get("effects") or {}
             for marker in _iter_cluster_markers(effects):
-                popup = marker[3] or ""
-                text = _strip_tags(popup) or str(marker[2])
+                text = _strip_tags(marker[3] or "") or str(marker[2])
                 plz = _first_plz(text)
                 size = _first_size(text)
-                if not plz or size is None:
-                    continue
-                sm = re.search(r"(\d{1,3}(?:[.,]\d{1,2})?)\s*m(?:²|2)\b", text, re.I)
-                size_str = sm.group(1) if sm else ""
-                # street = the popup line that is neither the summary nor the PLZ line
-                parts = re.split(r"(?i)<\s*br\s*/?\s*>|</p>|<p[^>]*>|</strong>", popup)
-                lines = [ln for ln in (_strip_tags(p).strip(" ,|") for p in parts) if ln]
-                summary = next((l for l in lines if re.search(r"Zimmer|€|m²|m2", l, re.I)), "")
-                plz_line = next((l for l in lines if _first_plz(l)), "")
-                street = next((l for l in lines if l not in (summary, plz_line)), "")
-                out.append({"plz": plz, "size": size, "size_str": size_str,
-                            "street": street, "cold": _parse_euro(text)})
-    return out
-
-
-def _read_rendered_cards(page) -> list:
-    """The finder renders ~10 apartment cards, each carrying the owning company's
-    real detail link. Return [{href, t}] (t = normalised lowercase card text) for
-    those cards; company detail links only. Copied from the watcher."""
-    try:
-        cards = page.evaluate(
-            "() => { const host=/howoge|degewo|gesobau|gewobag|stadtundland|wbm|berlinovo/i;"
-            " const det=/detail|mietangebote|properties|immo_ref|wohnung-id|t=ibw/i;"
-            " const out=[]; const seen=new Set();"
-            " for (const a of document.querySelectorAll('a[href]')) {"
-            "   const h=a.href||''; if(!host.test(h)||!det.test(h)||seen.has(h)) continue;"
-            "   seen.add(h);"
-            "   let el=a, card=null;"
-            "   for (let i=0;i<10 && el;i++,el=el.parentElement){"
-            "     const t=el.innerText||'';"
-            "     if(/€/.test(t) && /m²|m2/i.test(t)){card=el;break;} }"
-            "   if(!card) card=a.closest('[wire\\\\:id]');"
-            "   out.push({href:h, text:((card?card.innerText:'')||'').replace(/\\s+/g,' ')}); }"
-            " return out; }") or []
-    except Exception:
-        return []
-    return [{"href": c["href"],
-             "t": re.sub(r"\s+", " ", (c.get("text") or "")).strip().lower()}
-            for c in cards]
-
-
-def _goto_next_page(page) -> bool:
-    """Best-effort click of the finder list's 'next page' control so we can harvest
-    cards beyond the first page. Returns True if something was clicked. Never
-    raises. Tries Livewire pagination controls, then rel=next, then German labels."""
-    selectors = [
-        "[wire\\:click*='nextPage']", "[wire\\:click*='gotoPage']",
-        "a[rel='next']", ".pagination a[rel='next']",
-        "[aria-label*='ächst' i]", "[aria-label*='next page' i]",
-    ]
-    for sel in selectors:
-        try:
-            el = page.query_selector(sel)
-            if el and el.is_visible() and el.is_enabled():
-                el.click(timeout=2000)
-                return True
-        except Exception:
-            pass
-    for label in ["Weiter", "Nächste", "Nächste Seite", "Mehr anzeigen",
-                  "Mehr laden", "Mehr Ergebnisse", "›", "»"]:
-        for role in ("button", "link"):
-            try:
-                loc = page.get_by_role(role, name=label, exact=False)
-                if loc and loc.count() > 0 and loc.first.is_enabled():
-                    loc.first.click(timeout=2000)
-                    return True
-            except Exception:
-                pass
-    return False
-
-
-def _collect_cards(finder, max_pages: int) -> list:
-    """Read rendered cards across up to `max_pages` of the finder list, deduped by
-    href. Falls back to scrolling when no pagination control is found (covers
-    infinite-scroll layouts); stops early when a page yields no new cards."""
-    all_cards = {}
-
-    def _absorb():
-        for c in _read_rendered_cards(finder):
-            all_cards.setdefault(c["href"], c)
-
-    _absorb()
-    for _ in range(max(0, max_pages - 1)):
-        before = len(all_cards)
-        if not _goto_next_page(finder):
-            try:
-                finder.mouse.wheel(0, 4000)  # maybe it's infinite-scroll, not pages
-            except Exception:
-                pass
-        finder.wait_for_timeout(1800)
-        try:
-            finder.wait_for_load_state("networkidle", timeout=10000)
-        except Exception:
-            pass
-        _absorb()
-        if len(all_cards) == before:
-            break  # neither pagination nor scroll produced new cards
-    return list(all_cards.values())
-
-
-def _match_unique_card(mk: dict, cards: list):
-    """Return the detail URL of the ONE rendered card that identifies this marker
-    (street + size + cold rent), else None. Same conservative rule as the watcher:
-    a wrong URL is never assigned — ambiguous/no match returns None."""
-    street = re.sub(r"[\s,]+", " ", (mk.get("street") or "")).strip().lower()
-    if len(street) < 4:
-        return None
-    size_str = mk.get("size_str") or ""
-    size_variants = {s for s in (size_str, size_str.replace(".", ","),
-                                 size_str.replace(",", ".")) if s and len(s) >= 2}
-    price_variants = ({_de_price(mk["cold"]), _de_price(mk["cold"]).replace(".", "")}
-                      if mk.get("cold") else set())
-
-    def _street_size(c):
-        if street not in re.sub(r"[\s,]+", " ", c["t"]):
-            return False
-        return not size_variants or any(s in c["t"] for s in size_variants)
-
-    cand = [c for c in cards if _street_size(c)]
-    if price_variants:
-        cand = [c for c in cand if any(p in c["t"] for p in price_variants)]
-    return cand[0]["href"] if len(cand) == 1 else None
+                if plz and size is not None:
+                    live.add((plz, size))
+    return live
 
 
 # ---------------------------------------------------------------------------
@@ -432,41 +301,49 @@ def _is_satisfied(entry: dict, target: int) -> bool:
 # ---------------------------------------------------------------------------
 # scraping
 # ---------------------------------------------------------------------------
-def harvest_candidates(cards: list, markers: list) -> list:
-    """Join each Livewire marker to its unique rendered card so every candidate
-    carries its OWN authoritative index tokens:
-    [{company, href, plz, size, size_str, street}]. Markers that can't be matched
-    to exactly one card are skipped (we never guess a URL)."""
+def harvest_candidates(page) -> list:
+    """Return company DETAIL links from the finder, tagged by company, in page
+    order. Expected PLZ/size are NOT read here — the finder's rendered cards don't
+    reliably show a PLZ, so tokens come from the Livewire payload (see
+    live_set_from_payloads) and are matched against each exposé at classify time.
+    A link only has to be a company detail URL; homepage/footer links are excluded
+    by the detail-URL filter."""
+    raw = page.evaluate(r"""
+      () => {
+        const host=/howoge|degewo|gesobau|gewobag|stadtundland|wbm|berlinovo/i;
+        const det=/detail|mietangebote|properties|immo_ref|wohnung-id|t=ibw|expose|angebot/i;
+        const out=[]; const seen=new Set();
+        for (const a of document.querySelectorAll('a[href]')) {
+          const h=a.href||'';
+          if(!host.test(h)||!det.test(h)||seen.has(h)) continue;
+          seen.add(h);
+          out.push({href:h});
+        }
+        return out;
+      }
+    """)
     cands, seen = [], set()
-    for mk in markers:
-        href = _match_unique_card(mk, cards)
-        if not href or href in seen:
-            continue
+    for r in raw:
+        href = r.get("href", "")
         comp = _company_of(href)
-        if not comp:
+        if not comp or href in seen:
             continue
         seen.add(href)
-        cands.append({"company": comp, "href": href, "plz": mk["plz"],
-                      "size": mk["size"], "size_str": mk.get("size_str", ""),
-                      "street": mk.get("street", "")})
+        cands.append({"company": comp, "href": href})
     return cands
 
 
-def classify_and_map(context, cand: dict) -> dict:
+def classify_and_map(context, cand: dict, live_set: set) -> dict:
     """Open the exposé, classify current/expired, and for current listings map the
     application form. GET-only, never submits.
 
-    The listing's PLZ and size come from the INDEX (the finder), and stay
-    authoritative — they are what we record and display. CURRENT means the exposé
-    we land on still shows THIS listing's own PLZ **and** size (with no expiry
-    phrase). If either is missing, the exposé is gone / has been replaced by a
-    generic or different page, so the listing is treated as no longer active — even
-    though the page may show other, unrelated active flats."""
+    CURRENT means the exposé echoes a PLZ **and** an m² size that match one of the
+    finder's currently-live listings (`live_set`), with no expiry phrase present —
+    a generic/expired page won't show a specific live PLZ+size. If the Livewire
+    payload couldn't be parsed (empty live_set), fall back to accepting an exposé
+    that self-contains a PLZ+size with no expiry phrase, tagged `exposé-only`."""
     url = cand["href"]
-    sample = {"url": url, "initial_url": url, "final_url": None,
-              "captured_at": _now(),
-              "finder_plz": cand.get("plz"), "finder_size": cand.get("size"),
-              "status": "expired"}
+    sample = {"url": url, "captured_at": _now(), "status": "expired"}
     page = context.new_page()
     page.set_default_timeout(9000)
     try:
@@ -474,29 +351,35 @@ def classify_and_map(context, cand: dict) -> dict:
         sample["http_status"] = resp.status if resp else None
         _dismiss_consent(page)
         page.wait_for_timeout(1500)
-        # Where we actually wound up after any redirects — a strong active/expired
-        # signal on its own: e.g. WBM lands on a listing-specific URL when the flat
-        # is live, but stays on the original path (a multi-listing page) when it's
-        # gone. Captured before we follow any apply link.
-        sample["final_url"] = page.url
         scan = page.evaluate(_FORM_SCAN_JS)
         body = scan.get("body_text", "") + " " + (scan.get("title") or "")
 
-        # --- classify: does the exposé still show THIS listing's PLZ + size? ---
-        plz_found = bool(cand.get("plz")) and cand["plz"] in body
-        size_found = _size_matches(cand.get("size"), body)
+        # --- expiry classification: echo a live (PLZ, size) pair ---
+        page_plzs = _page_plzs(body)
+        page_sizes = _page_sizes(body)
         expired_phrase = next((p for p in _EXPIRED_PHRASES if p in body.lower()), None)
-        sample["plz_found_on_expose"] = plz_found
-        sample["size_found_on_expose"] = size_found
+        matched = None
+        if live_set:
+            for lp, ls in live_set:
+                if lp in page_plzs and any(abs(s - ls) <= 1.0 for s in page_sizes):
+                    matched = [lp, ls]
+                    break
+            is_current = matched is not None and not expired_phrase
+            echo_source = "live-set" if is_current else None
+        else:  # fallback: no live_set parsed — accept exposé self-consistency
+            is_current = bool(page_plzs) and bool(page_sizes) and not expired_phrase
+            echo_source = "exposé-only" if is_current else None
+        sample["matched_live"] = matched
+        sample["echo_source"] = echo_source
+        sample["page_plzs"] = sorted(page_plzs)[:5]
+        sample["page_sizes"] = page_sizes[:5]
         sample["expired_phrase"] = expired_phrase
-        is_current = plz_found and size_found and not expired_phrase
         sample["status"] = "current" if is_current else "expired"
 
-        # screenshot regardless (evidence of what we saw). full_page so banners
-        # below the fold (e.g. degewo's red "Inserat deaktiviert") are captured.
+        # screenshot regardless (evidence of what we saw)
         shot = SHOTS_DIR / f"{cand['company']}_{abs(hash(url)) % 10_000_000}.png"
         try:
-            page.screenshot(path=str(shot), full_page=True)
+            page.screenshot(path=str(shot), full_page=False)
             sample["screenshot"] = str(shot.relative_to(HERE))
         except Exception:
             pass
@@ -587,23 +470,6 @@ def write_report(findings: dict, companies: list, target: int):
                 f"submit: {(st.get('submit_target') or {}).get('method','?')} "
                 f"{(st.get('submit_target') or {}).get('action','')}",
             ]
-        # Per-listing detail (current AND expired) so problems are examinable by
-        # hand: the PLZ+size FROM THE INDEX (authoritative), whether each was still
-        # found on the exposé, and the initial link vs. the URL we landed on (a
-        # redirect away is a strong active/expired signal).
-        for s in samples:
-            plz = s.get("finder_plz") or "?"
-            sz = s.get("finder_size")
-            sz = f"{sz:g}" if isinstance(sz, (int, float)) else "?"
-            found = (f"plz{'✓' if s.get('plz_found_on_expose') else '✗'} "
-                     f"size{'✓' if s.get('size_found_on_expose') else '✗'}")
-            init = s.get("initial_url") or s.get("url") or ""
-            fin = s.get("final_url") or ""
-            redir = "  ← redirected" if (fin and fin != init) else ""
-            lines.append(f"- **[{s.get('status')}]** PLZ {plz} · {sz} m² (from index)"
-                         f"  — on exposé: {found}")
-            lines.append(f"    - initial: {init}")
-            lines.append(f"    - final:   {fin}{redir}")
         lines.append("")
     if still_needed:
         lines += ["## Still needed (re-run later to catch a live listing)",
@@ -622,9 +488,6 @@ def main():
                     help="current (non-expired) samples needed to satisfy a company")
     ap.add_argument("--refresh", default="",
                     help="'all' or comma-list of companies to re-grab & override")
-    ap.add_argument("--max-pages", type=int, default=3,
-                    help="how many pages of the finder card list to harvest URLs "
-                         "from (markers/PLZ+size already cover all listings)")
     ap.add_argument("--headful", action="store_true")
     args = ap.parse_args()
 
@@ -708,13 +571,12 @@ def main():
                 finder.wait_for_timeout(1500)
             except Exception:
                 pass
-            cards = _collect_cards(finder, args.max_pages)
-            markers = listings_from_payloads(api_payloads)
-            cands = harvest_candidates(cards, markers)
+            cands = harvest_candidates(finder)
+            live_set = live_set_from_payloads(api_payloads)
             finder.close()
-            print(f"[*] {len(markers)} Livewire listings, {len(cards)} rendered "
-                  f"cards over up to {args.max_pages} page(s) -> {len(cands)} "
-                  f"matched candidates (with index PLZ+size)", file=sys.stderr)
+            print(f"[*] harvested {len(cands)} company links; "
+                  f"{len(live_set)} live (PLZ,size) pairs from Livewire",
+                  file=sys.stderr)
 
             need = {c: target - sum(1 for s in findings.get(c, {}).get("samples", [])
                                     if s.get("status") == "current")
@@ -724,7 +586,7 @@ def main():
                 if comp not in todo or need.get(comp, 0) <= 0:
                     continue
                 print(f"[*] {comp}: mapping {cand['href']}", file=sys.stderr)
-                sample = classify_and_map(context, cand)
+                sample = classify_and_map(context, cand, live_set)
                 entry = findings.setdefault(comp, {"samples": []})
                 entry.setdefault("samples", []).append(sample)
                 entry["target_current"] = target
@@ -738,9 +600,8 @@ def main():
                 entry["satisfied"] = _is_satisfied(entry, target)
                 save_findings(findings)  # persist incrementally
                 print(f"    -> {sample['status']}"
-                      f"  (index PLZ {sample.get('finder_plz')} {sample.get('finder_size')}m²;"
-                      f" on exposé plz={sample.get('plz_found_on_expose')}"
-                      f" size={sample.get('size_found_on_expose')})", file=sys.stderr)
+                      f"  (echo={sample.get('echo_source')},"
+                      f" matched={sample.get('matched_live')})", file=sys.stderr)
         finally:
             try:
                 browser.close()
